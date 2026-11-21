@@ -28,6 +28,17 @@ export const saveElderAgenda = createServerFn({ method: "POST" })
     return updatedAt ? { ok: true as const, updatedAt } : { ok: false as const, error: "Visita não encontrada." };
   });
 
+export const scPublishElderAgenda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { roleForUser, publishAgenda } = await import("./elder-agenda/agenda.server");
+    const role = await roleForUser(context.userId, data.visitId);
+    if (role !== "sc") return { ok: false as const, error: "Só o superintendente envia a pauta." };
+    const publishedAt = await publishAgenda(data.visitId);
+    return publishedAt ? { ok: true as const, publishedAt } : { ok: false as const, error: "Salve a pauta antes de enviar." };
+  });
+
 /** Acesso "Corpo de anciãos" (sem cadastro): o código da congregação libera só os campos marcados "Todos". */
 export const guestGetElderAgenda = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ inviteCode: codeSchema }).parse(input))
@@ -74,6 +85,10 @@ export const scDeleteAttachment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { roleForUser, AGENDA_BUCKET } = await import("./elder-agenda/agenda.server");
     if ((await roleForUser(context.userId, data.visitId)) !== "sc" || !data.path.startsWith(`${data.visitId}/`)) return { ok: false as const };
+    // Ainda na versão enviada aos anciãos: o arquivo fica até o próximo envio.
+    const { savedPayload } = await import("./elder-agenda/agenda.server");
+    const sent = await savedPayload(data.visitId, true);
+    if (sent?.blocks.some((b) => b.cards.some((c) => c.attachments.some((x) => x.cloudPath === data.path)))) return { ok: true as const };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.storage.from(AGENDA_BUCKET).remove([data.path]);
     return { ok: true as const };

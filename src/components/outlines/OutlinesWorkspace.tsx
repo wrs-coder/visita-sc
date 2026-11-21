@@ -702,6 +702,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
             setExpanded((s) => new Set(s).add(target.folderId as string));
           }
           setDraft(target);
+          setShowLibrary(false);
           setMode(search.mode ?? "outline");
         }
         // Limpa o search param para não re-disparar se o usuário navegar internamente.
@@ -746,8 +747,8 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
     setDraft(n);
     setShowLibrary(false);
     if (activeType) setRecentIds(touchRecent(activeType, n.id));
-    // "Anotações" não tem modo Esboço — sempre abre direto no editor.
-    setMode((n.type ?? activeType) === "talk_notes" ? "edit" : "outline");
+    // Tocar num esboço da lista abre no Modo edição (o Modo esboço fica no botão do topo).
+    setMode("edit");
   }
 
   // Criação exige escolher a pasta antes.
@@ -2185,6 +2186,7 @@ export function OutlinesWorkspace({ lockedType, search, onSearchConsumed, onFore
                     dateFmt={dateFmt}
                     onInsertBibleText={handleInsertBibleText}
                     onSyncInfo={setSyncInfo}
+                    visible={!showLibrary || (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches)}
                     onBack={() => {
                       if (focusEdit) {
                         // Igual ao Modo esboço: sai da edição sem distrações e volta à tela
@@ -2340,6 +2342,8 @@ interface EditorProps {
   onInsertBibleText: (text: string) => void | Promise<void>;
   onSyncInfo?: (info: SyncInfo | null) => void;
   onBack?: () => void;
+  /** Editor na tela (no celular some quando a lista volta): a boia do cronômetro só aparece assim. */
+  visible?: boolean;
 }
 
 type SyncInfo = { run: () => void | Promise<void>; syncing: boolean };
@@ -2348,7 +2352,7 @@ const EDITOR_EXTRA_KEY = "visita-sc:outline-editor-extra";
 
 function NoteEditor({
   draft, mode, type, saving, activeBible, detected,
-  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText, onSyncInfo, onBack,
+  onPatch, onModeChange, onSave, onDelete, onExport, onExportDocx, onFullscreen, onCloud, dateFmt, onInsertBibleText, onSyncInfo, onBack, visible = true,
 }: EditorProps) {
   const { t } = useTranslation();
   const isField = type === "field_consideration";
@@ -2792,7 +2796,7 @@ function NoteEditor({
 
         {/* Modo Esboço: cronômetro vira boia (arrasta e prende na borda); a
             barra do topo fica fixa e o esboço rola por baixo dela. */}
-        {mode === "outline" && !isTalk && <FloatingOutlineTimer outlineId={draft.id} />}
+        {mode === "outline" && !isTalk && visible && <FloatingOutlineTimer outlineId={draft.id} />}
         {!isTalk && mode === "outline" && (
           <OutlineInactivitySensor outlineId={draft.id} />
         )}

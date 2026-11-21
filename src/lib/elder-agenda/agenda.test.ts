@@ -317,3 +317,45 @@ describe("pauta: salvamento do SC com tela antiga e anexos tirados", () => {
     expect(removedCloudPaths(before, after)).toEqual(["v/x.pdf"]);
   });
 });
+
+describe("enviar pauta para os anciãos", async () => {
+  const { elderView, hasUnsentChanges, topicAt } = await import("./agenda");
+  const base = (): AgendaPayload => {
+    const p = emptyAgenda();
+    p.blocks = [newBlock("Tema", [newCard("notes", { id: "n1", perm: "sc" }), newCard("eldersInfo", { id: "e1", perm: "all" })])];
+    return p;
+  };
+  it("ancião não vê rascunho do SC salvo depois do envio", () => {
+    const sent = withHtml(base(), "n1", "<p>enviado</p>");
+    const live = withHtml(sent, "n1", "<p>rascunho</p>");
+    expect(card(elderView(sent, live, "elder"), "n1").html).toBe("<p>enviado</p>");
+  });
+  it("ancião vê a versão nova depois de um novo envio", () => {
+    const live = withHtml(base(), "n1", "<p>novo</p>");
+    expect(card(elderView(live, live, "elder"), "n1").html).toBe("<p>novo</p>");
+  });
+  it("respostas dos anciãos aparecem mesmo sem novo envio", () => {
+    const sent = base();
+    const live = withCard(sent, "e1", { responses: [{ id: "r1", name: "", authorKey: "", text: "ok" } as never] });
+    expect(card(elderView(sent, live, "elder"), "e1").responses).toHaveLength(1);
+  });
+  it("tópico criado só no rascunho não aparece para o ancião", () => {
+    const sent = base();
+    const live = { ...sent, blocks: [...sent.blocks, newBlock("Rascunho")] };
+    expect(elderView(sent, live, "elder").blocks).toHaveLength(1);
+  });
+  it("alterações não enviadas: ignora respostas, detecta texto", () => {
+    const sent = base();
+    expect(hasUnsentChanges(withCard(sent, "e1", { responses: [{ id: "r" } as never] }), sent)).toBe(false);
+    expect(hasUnsentChanges(withHtml(sent, "e1", "<p>x</p>"), sent)).toBe(true);
+    expect(hasUnsentChanges(sent, null)).toBe(true);
+  });
+  it("pílula: tópico atual e tempo restante pelo tempo decorrido", () => {
+    const p = emptyAgenda();
+    p.blocks = [{ ...newBlock("A"), minutes: 10 }, { ...newBlock("B"), minutes: 5 }];
+    const list = numberedBlocks(p.blocks);
+    expect(topicAt(list, 0)).toEqual({ index: 0, remainingSec: 600, overSec: 0 });
+    expect(topicAt(list, 660)).toEqual({ index: 1, remainingSec: 240, overSec: 0 });
+    expect(topicAt(list, 960)?.overSec).toBe(60);
+  });
+});

@@ -1,0 +1,2 @@
+ALTER TABLE public.elder_meeting_agendas ADD COLUMN IF NOT EXISTS published_payload jsonb, ADD COLUMN IF NOT EXISTS published_at timestamptz;
+UPDATE public.elder_meeting_agendas SET published_payload = payload, published_at = updated_at WHERE published_payload IS NULL;

@@ -22,9 +22,9 @@ export const Route = createFileRoute("/_app/pauta-ancioes")({
 
 function Page() {
   const { visit, loading: visitLoading } = useActiveVisit();
-  const { data, error, loading, reload, save } = useElderAgenda(visit?.id);
+  const { data, error, loading, reload, save, publish } = useElderAgenda(visit?.id);
   return (
-    <div className="space-y-4 max-w-2xl lg:max-w-5xl mx-auto overflow-x-hidden">
+    <div className="space-y-4 max-w-2xl lg:max-w-5xl mx-auto overflow-x-clip">
       <VisitProgramTabs />
       <h1 className="sr-only">Pauta da reunião com os anciãos</h1>
       {visitLoading || (loading && !data) ? (
@@ -37,7 +37,7 @@ function Page() {
           <Button variant="outline" onClick={() => void reload()}>Tentar de novo</Button>
         </div>
       ) : data ? (
-        <ElderAgendaView key={data.visitId} data={data} save={save} onRefresh={reload} />
+        <ElderAgendaView key={data.visitId} data={data} save={save} onRefresh={reload} onPublish={publish} />
       ) : null}
     </div>
   );

@@ -48,3 +48,7 @@
 - [x] Anexo tirado some na hora e sai da nuvem
 - [x] PDF no iPad (leitor compatível + plano B) e sem marcação azul ao tocar
 - [x] Layout de tablet/iPad: menu lateral só na horizontal, margens laterais, Início em 2 colunas, pauta com índice de tópicos, janelas centralizadas
+- [x] Pauta: botão "Enviar pauta para os anciãos" (rascunho x versão enviada, último envio)
+- [x] Pauta: pílula flutuante de tempo por tópico; coluna lateral acompanha rolagem
+- [x] Esboços: boia do cronômetro fecha ao sair do Modo esboço; Início abre direto no Modo esboço; lista abre no Modo edição
+- [x] Quadro de anúncios: aviso falso de presidente faltando

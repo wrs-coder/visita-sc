@@ -7,7 +7,7 @@ import { useFocusChromeWhile } from "@/lib/focus-chrome";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, BookOpen, CalendarClock, ChevronDown, Eye, EyeOff, FileDown, FileText, HandHeart, Layers, Library, Link2, Loader2,
-  Lock, MapPin, MessageSquareReply, Pencil, PlayCircle, Plus, Save, Trash2, Users, UserCog, WifiOff, X,
+  Lock, MapPin, MessageSquareReply, Pencil, PlayCircle, Plus, Save, Send, Trash2, Users, UserCog, WifiOff, X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import { AGENDA_PDF_STYLES, type AgendaPdfStyle } from "@/lib/elder-agenda/agend
 import { readPdfStyle, writePdfStyle } from "@/lib/elder-agenda/agenda-cache";
 import { openAllLinks } from "./open-all-links";
 import { AgendaTemplatesDialog } from "./AgendaTemplatesDialog";
+import { AgendaTopicPill } from "./AgendaTopicPill";
 import { AttachmentViewerHost } from "./AttachmentViewer";
 import { AgendaAttachments, type AgendaAttachmentApi } from "./AgendaAttachments";
 import { EditorResizeHandle } from "@/components/outlines/EditorResizeHandle";
@@ -49,7 +50,11 @@ export interface AgendaData {
   payload: AgendaPayload; auto: AgendaAuto; offline?: boolean;
   attachmentApi?: AgendaAttachmentApi;
   /** Quando a pauta veio da nuvem pela última vez (ms). */ loadedAt?: number | null;
+  /** Último envio aos anciãos. */ publishedAt?: string | null;
+  /** Ancião: o SC ainda não enviou. */ notPublished?: boolean;
+  /** SC: ajustes salvos ainda não enviados. */ unsent?: boolean;
 }
+export type AgendaPublisher = () => Promise<{ ok: boolean; error?: string }>;
 export type AgendaSaver = (payload: AgendaPayload) => Promise<{ ok: boolean; error?: string }>;
 
 const ACCESS_NEXT: Record<AgendaAccess, AgendaAccess> = { sc: "coordinator", coordinator: "all", all: "sc" };
@@ -110,7 +115,15 @@ export function initialMode(p: AgendaPayload): AgendaMode {
   return filled ? "read" : "prepare";
 }
 
-export function ElderAgendaView({ data, save, onRefresh }: { data: AgendaData; save: AgendaSaver; onRefresh?: () => Promise<void> | void }) {
+export function ElderAgendaView({ data, save, onRefresh, onPublish }: { data: AgendaData; save: AgendaSaver; onRefresh?: () => Promise<void> | void; onPublish?: AgendaPublisher }) {
+  const [publishOpen, setPublishOpen] = useState(false);
+  // Índice lateral (iPad/tablet deitado) acompanha a rolagem: o main não pode recortar com overflow hidden.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("outline-sticky");
+    return () => root.classList.remove("outline-sticky");
+  }, []);
+  const [publishing, setPublishing] = useState(false);
   const [p, setP] = useState<AgendaPayload>(data.payload);
   const [dirty, setDirtyState] = useState(false);
   const dirtyRef = useRef(false);
@@ -540,6 +553,27 @@ export function ElderAgendaView({ data, save, onRefresh }: { data: AgendaData; s
   const responseTotal = p.blocks.reduce((n, b) => n + b.cards.reduce((m, c) => m + (c.type === "eldersInfo" ? c.responses.length : 0), 0), 0);
   const meetingMs = view.meetingAt ? Date.parse(view.meetingAt) : NaN;
   const deadlineMs = p.deadlineAt ? Date.parse(p.deadlineAt) : NaN;
+  const onSend = async () => {
+    if (!onPublish) return;
+    setPublishing(true);
+    try {
+      if (dirty && !(await onSave())) return;
+      const r = await onPublish();
+      if (r.ok) { toast.success("Pauta enviada aos anciãos."); setPublishOpen(false); } else toast.error(r.error ?? "Não foi possível enviar.");
+    } catch { toast.error("Sem conexão. Conecte-se para enviar."); } finally { setPublishing(false); }
+  };
+  const fmtSent = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", " às");
+
+  if (!isSc && data.notPublished) {
+    return (
+      <Card><CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+        <CalendarClock className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">O superintendente ainda não enviou a pauta.</p>
+        {onRefresh ? <Button variant="outline" size="sm" onClick={() => void onRefresh()}><RefreshCw className="h-4 w-4" /> Atualizar</Button> : null}
+      </CardContent></Card>
+    );
+  }
+
   return (
     <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6">
       {/* iPad/tablet na horizontal: índice dos tópicos à esquerda, conteúdo à direita. */}
@@ -631,6 +665,9 @@ export function ElderAgendaView({ data, save, onRefresh }: { data: AgendaData; s
         </Card>
       ) : null}
 
+      {isSc && !offline && (data.unsent || dirty) ? (
+        <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground"><span className="h-2 w-2 shrink-0 rounded-full bg-primary" />{data.publishedAt ? "Alterações não enviadas aos anciãos." : "Os anciãos ainda não veem esta pauta. Toque em “Enviar pauta para os anciãos”."}</div>
+      ) : null}
       {offline ? (
         <div className="flex items-center gap-2 rounded-xl border bg-muted/50 px-3 py-2 text-xs text-muted-foreground"><WifiOff className="h-4 w-4 shrink-0" />Sem internet: mostrando a pauta guardada neste aparelho (somente leitura).</div>
       ) : locked && !isSc ? (
@@ -763,6 +800,25 @@ export function ElderAgendaView({ data, save, onRefresh }: { data: AgendaData; s
           </Button>
         ) : null}
       </div>
+      {!full && !preparing && !building ? <AgendaTopicPill visitId={data.visitId} list={numberedBlocks(p.blocks, data.auto)} onGoTopic={goTopic} /> : null}
+      {isSc && onPublish && !preparing ? (
+        <div className="space-y-1 text-center">
+          <Button className="w-full" variant={data.unsent || dirty || !data.publishedAt ? "default" : "outline"} onClick={() => setPublishOpen(true)} disabled={offline || publishing}>
+            {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar pauta para os anciãos
+          </Button>
+          <p className="text-[11px] text-muted-foreground">{offline ? "Conecte-se para enviar." : data.publishedAt ? `Último envio: ${fmtSent(data.publishedAt)}` : "Ainda não enviada."}</p>
+        </div>
+      ) : null}
+      <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Enviar pauta aos anciãos?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Eles passarão a ver esta versão. Itens “Só você vê” continuam ocultos.{dirty ? " As alterações serão salvas antes." : ""}</p>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setPublishOpen(false)}>Cancelar</Button>
+            <Button className="flex-1" onClick={() => void onSend()} disabled={publishing}>{publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Enviar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
         <DialogContent className="max-w-sm">

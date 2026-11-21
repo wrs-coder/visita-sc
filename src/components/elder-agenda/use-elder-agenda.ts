@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getAgendaAttachmentUrl, getElderAgenda, saveElderAgenda, scAttachmentUploadUrl, scDeleteAttachment } from "@/lib/elder-agenda.functions";
+import { getAgendaAttachmentUrl, getElderAgenda, saveElderAgenda, scAttachmentUploadUrl, scPublishElderAgenda, scDeleteAttachment } from "@/lib/elder-agenda.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cloudAttachmentCount, responseIds } from "@/lib/elder-agenda/agenda";
 import type { AgendaAttachmentApi } from "./AgendaAttachments";
 import { authorSecret } from "./agenda-author";
 import { withNetworkWindow } from "@/lib/net-policy";
 import { clearAgendaCache, readAgendaCache, writeAgendaCache } from "@/lib/elder-agenda/agenda-cache";
-import type { AgendaData, AgendaSaver } from "./ElderAgendaView";
+import type { AgendaData, AgendaPublisher, AgendaSaver } from "./ElderAgendaView";
 
 /** Carrega a pauta da visita da nuvem; sem internet, usa a cópia guardada no aparelho (somente leitura). */
 export function useElderAgenda(visitId: string | null | undefined) {
@@ -16,6 +16,7 @@ export function useElderAgenda(visitId: string | null | undefined) {
   const fnUrl = useServerFn(getAgendaAttachmentUrl);
   const fnUp = useServerFn(scAttachmentUploadUrl);
   const fnDel = useServerFn(scDeleteAttachment);
+  const fnPub = useServerFn(scPublishElderAgenda);
   const [raw, setData] = useState<AgendaData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,13 @@ export function useElderAgenda(visitId: string | null | undefined) {
     return r.ok ? { ok: true } : { ok: false, error: r.error };
   }, [visitId, fnSave, raw, reload]);
 
+  const publish: AgendaPublisher = useCallback(async () => {
+    if (!visitId) return { ok: false, error: "Sem visita." };
+    const r = await withNetworkWindow(() => fnPub({ data: { visitId } }));
+    if (r.ok) await reload();
+    return r.ok ? { ok: true } : { ok: false, error: r.error };
+  }, [visitId, fnPub, reload]);
+
   const attachmentApi = useMemo<AgendaAttachmentApi | undefined>(() => {
     if (!visitId) return undefined;
     return {
@@ -63,5 +71,5 @@ export function useElderAgenda(visitId: string | null | undefined) {
   }, [visitId, fnUrl, fnUp, fnDel, raw]);
   const data = useMemo(() => (raw ? { ...raw, attachmentApi, loadedAt } : null), [raw, attachmentApi, loadedAt]);
 
-  return { data, error, loading, reload, save };
+  return { data, error, loading, reload, save, publish };
 }

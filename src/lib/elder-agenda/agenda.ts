@@ -557,3 +557,42 @@ export function applyTemplate(current: AgendaBlock[], tpl: AgendaBlock[]): Agend
     return { ...tc, html: c.html || tc.html, subject: c.subject || tc.subject, notes: c.notes, recInfo: c.recInfo, attachments: c.attachments, items: hasLinks ? c.items : tc.items };
   }) }));
 }
+
+/**
+ * O que o ancião vê: a estrutura e o conteúdo do SC vêm da última versão ENVIADA;
+ * o que os anciãos preenchem (respostas, cartões editáveis por eles, orações) vem da versão viva,
+ * porque é lá que as respostas são gravadas e elas não dependem do envio.
+ */
+export function elderView(published: AgendaPayload, live: AgendaPayload, role: AgendaRole): AgendaPayload {
+  const liveCards = new Map(live.blocks.flatMap((b) => b.cards).map((c) => [c.id, c]));
+  const out: AgendaPayload = { ...published, blocks: published.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => {
+    const l = liveCards.get(c.id);
+    if (!l || l.type !== c.type) return c;
+    if (c.type === "eldersInfo") return { ...c, responses: l.responses };
+    if (!canEditCard(role, c)) return c;
+    return { ...c, subject: l.subject, html: l.html, notes: l.notes, recInfo: l.recInfo, items: c.type === "links" ? l.items : c.items };
+  }) })) };
+  if (canEdit(role, published.prayersPerm)) {
+    out.prayerOpen = live.prayerOpen; out.prayerRec = live.prayerRec; out.prayerClose = live.prayerClose; out.minutesTaker = live.minutesTaker;
+  }
+  return out;
+}
+
+/** Conteúdo do SC difere do último envio? (respostas dos anciãos não contam). */
+export function hasUnsentChanges(live: AgendaPayload, published: AgendaPayload | null): boolean {
+  if (!published) return true;
+  const strip = (p: AgendaPayload) => JSON.stringify(withoutPrivate({ ...p, blocks: p.blocks.map((b) => ({ ...b, cards: b.cards.map((c) => (c.type === "eldersInfo" ? { ...c, responses: [] } : c)) })) }));
+  return strip(live) !== strip(published);
+}
+
+/** Tópico em andamento pelo tempo decorrido da reunião (pílula de tempo por tópico). */
+export function topicAt(list: Pick<NumberedBlock, "n" | "startMin" | "block">[], elapsedSec: number): { index: number; remainingSec: number; overSec: number } | null {
+  if (!list.length) return null;
+  for (let i = 0; i < list.length; i++) {
+    const it = list[i]!;
+    const end = (it.startMin + it.block.minutes) * 60;
+    if (elapsedSec < end) return { index: i, remainingSec: end - elapsedSec, overSec: 0 };
+  }
+  const last = list[list.length - 1]!;
+  return { index: list.length - 1, remainingSec: 0, overSec: elapsedSec - (last.startMin + last.block.minutes) * 60 };
+}

@@ -3,13 +3,19 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { loadMergedVisitExtras } from "@/lib/visit-template-extras.server";
 import { resolveWeekdaySlot } from "@/lib/today-timeline";
 import {
-  RECOMMENDATION_PURPOSE, emptyAgenda, removedCloudPaths, emptyAuto, isLocked, isScOnlyCard, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
+  RECOMMENDATION_PURPOSE, emptyAgenda, removedCloudPaths, emptyAuto, isLocked, isScOnlyCard, elderView, hasUnsentChanges, mergeAgenda, normalizeAgenda, normalizeBlocks, withoutPrivate,
   type AgendaAuto, type AgendaPayload, type AgendaRole,
 } from "./agenda";
 
 export interface AgendaDTO {
   ok: true; visitId: string; visitTitle: string; congregation: string; congregationId: string; startDate: string; range: string;
   role: AgendaRole; payload: AgendaPayload; auto: AgendaAuto; updatedAt: string | null;
+  /** Último "Enviar pauta para os anciãos" (null = nunca enviada). */
+  publishedAt?: string | null;
+  /** Só anciãos: o SC ainda não enviou a pauta. */
+  notPublished?: boolean;
+  /** Só SC: há ajustes salvos que os anciãos ainda não veem. */
+  unsent?: boolean;
 }
 
 /** Papel de um usuário com cadastro na visita (null = sem acesso). */
@@ -47,7 +53,7 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
   if (!v) return null;
   const [{ data: cong }, { data: row }, { data: meet }, { data: recs }, { data: locs }] = await Promise.all([
     supabaseAdmin.from("congregations").select("name,superintendent_id").eq("id", v.congregation_id).maybeSingle(),
-    supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions,updated_at").eq("visit_id", visitId).maybeSingle(),
+    supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions,updated_at,published_payload,published_at").eq("visit_id", visitId).maybeSingle(),
     supabaseAdmin.from("elders_servants_meetings").select("meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visitId).limit(1),
     supabaseAdmin.from("elder_recommendations").select("id,purpose,full_name,family_members,field_group,info").eq("visit_id", visitId).order("sort_order").order("created_at"),
     supabaseAdmin.from("elder_local_matters").select("id,suggested_by,subject,sources,info").eq("visit_id", visitId).order("sort_order").order("created_at"),
@@ -81,10 +87,13 @@ export async function loadAgenda(visitId: string, role: AgendaRole): Promise<Age
     const blocks = normalizeBlocks(tpl?.[0]?.blocks);
     if (blocks.length) payload = { ...emptyAgenda(), blocks };
   }
+  const published = row?.published_payload ? normalizeAgenda(row.published_payload) : null;
   if (role === "sc" && cong?.superintendent_id) void cleanupOldAttachments(cong.superintendent_id).catch(() => undefined);
   return {
     ok: true, visitId, visitTitle: v.title, congregation: cong?.name ?? "", congregationId: v.congregation_id, startDate: v.start_date, range: fmtRange(v.start_date, v.end_date), role,
-    payload: role === "sc" ? payload : withoutPrivate(payload), auto, updatedAt: row?.updated_at ?? null,
+    payload: role === "sc" ? payload : withoutPrivate(elderView(published ?? { ...payload, blocks: [] }, payload, role)), auto, updatedAt: row?.updated_at ?? null,
+    publishedAt: row?.published_at ?? null,
+    ...(role === "sc" ? { unsent: !!row && hasUnsentChanges(payload, published) } : { notPublished: !published }),
   };
 }
 
@@ -98,9 +107,11 @@ export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw:
   if (!v) return null;
   const { data: cong } = await supabaseAdmin.from("congregations").select("superintendent_id").eq("id", v.congregation_id).maybeSingle();
   if (!cong) return null;
-  const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions").eq("visit_id", visitId).maybeSingle();
+  const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions,published_payload").eq("visit_id", visitId).maybeSingle();
   const current = row ? normalizeAgenda(row.payload, row.permissions) : emptyAgenda();
-  if (role !== "sc" && isLocked(current)) return "locked";
+  const published = row?.published_payload ? normalizeAgenda(row.published_payload) : null;
+  if (role !== "sc" && !published) return "locked";
+  if (role !== "sc" && isLocked(published ?? current)) return "locked";
   const incoming = normalizeAgenda(incomingRaw);
   // Anexo só pode apontar para a pasta desta visita.
   for (const b of incoming.blocks) for (const c of b.cards) c.attachments = c.attachments.map((a) => (a.cloudPath && !a.cloudPath.startsWith(`${visitId}/`) ? { ...a, cloudPath: "" } : a));
@@ -113,7 +124,9 @@ export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw:
   if (error) throw new Error("Não foi possível salvar a pauta.");
   // Anexo tirado da pauta: o arquivo sai também da nuvem (só o SC muda anexos).
   if (role === "sc") {
-    const gone = removedCloudPaths(current, merged).filter((x) => x.startsWith(`${visitId}/`));
+    // Anexo que ainda está na versão enviada aos anciãos só sai da nuvem no próximo envio.
+    const sent = new Set(published ? published.blocks.flatMap((b) => b.cards.flatMap((c) => c.attachments.map((a) => a.cloudPath))) : []);
+    const gone = removedCloudPaths(current, merged).filter((x) => x.startsWith(`${visitId}/`) && !sent.has(x));
     if (gone.length) { try { await supabaseAdmin.storage.from(AGENDA_BUCKET).remove(gone); } catch { /* a limpeza de 30 dias pega depois */ } }
   }
   return data.updated_at;
@@ -122,15 +135,34 @@ export async function saveAgenda(visitId: string, role: AgendaRole, incomingRaw:
 export const AGENDA_BUCKET = "elder-agenda-files";
 
 /** Payload salvo (com notas privadas) — para conferir anexos. */
-export async function savedPayload(visitId: string): Promise<AgendaPayload | null> {
-  const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions").eq("visit_id", visitId).maybeSingle();
-  return row ? normalizeAgenda(row.payload, row.permissions) : null;
+export async function savedPayload(visitId: string, sentOnly = false): Promise<AgendaPayload | null> {
+  const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,permissions,published_payload").eq("visit_id", visitId).maybeSingle();
+  if (!row) return null;
+  if (sentOnly) return row.published_payload ? normalizeAgenda(row.published_payload) : null;
+  return normalizeAgenda(row.payload, row.permissions);
+}
+
+/** "Enviar pauta para os anciãos": a versão salva do SC passa a ser a que os anciãos veem. Só chamar depois de conferir que é o SC. */
+export async function publishAgenda(visitId: string): Promise<string | null> {
+  const { data: row } = await supabaseAdmin.from("elder_meeting_agendas").select("payload,published_payload").eq("visit_id", visitId).maybeSingle();
+  if (!row) return null;
+  const before = row.published_payload ? normalizeAgenda(row.published_payload) : null;
+  const live = normalizeAgenda(row.payload);
+  const at = new Date().toISOString();
+  const { error } = await supabaseAdmin.from("elder_meeting_agendas").update({ published_payload: row.payload, published_at: at }).eq("visit_id", visitId);
+  if (error) throw new Error("Não foi possível enviar a pauta.");
+  // Anexos que estavam só na versão antiga enviada e já saíram do rascunho: limpar da nuvem agora.
+  if (before) {
+    const gone = removedCloudPaths(before, live).filter((x) => x.startsWith(`${visitId}/`));
+    if (gone.length) { try { await supabaseAdmin.storage.from(AGENDA_BUCKET).remove(gone); } catch { /* limpeza de 30 dias */ } }
+  }
+  return at;
 }
 
 /** O arquivo está na pauta salva e pode ser visto por este papel (privado só o SC). */
 export async function attachmentVisible(visitId: string, path: string, role: AgendaRole): Promise<boolean> {
   if (!path.startsWith(`${visitId}/`)) return false;
-  const p = await savedPayload(visitId);
+  const p = await savedPayload(visitId, role !== "sc");
   if (!p) return false;
   return p.blocks.some((b) => b.cards.some((c) => (role === "sc" || !isScOnlyCard(c)) && c.attachments.some((a) => a.cloudPath === path)));
 }

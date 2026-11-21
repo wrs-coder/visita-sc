@@ -130,3 +130,16 @@ describe("quadro: campo detalhado e modelo simplificado", () => {
     expect(m.specialsDetail[0]).toEqual({ title: "Reunião com Pioneiros", place: "Salão", when: "Quarta-feira, 19:00", theme: "Eu os chamo de amigos", opening: "Ana", closing: "Bia" });
   });
 });
+
+describe("aviso do quadro completo", async () => {
+  const { boardMissing } = await import("./board-program");
+  const parts = [{ id: "c0", theme: "Comentários iniciais", minutes: 1, section: "open", kind: "comments", assigned: "" }];
+  it("não avisa presidente faltando quando ele está preenchido", () => {
+    const m = buildBoardModel({ ...base, midweek: { ...base.midweek, parts: parts.map((p) => ({ ...p })) as never, start: "19:30" } });
+    expect(boardMissing(m, "full")).not.toContain("presidente do meio de semana");
+  });
+  it("avisa quando o presidente está vazio", () => {
+    const m = buildBoardModel({ ...base, midweek: { ...base.midweek, chairman: "", parts: parts.map((p) => ({ ...p })) as never, start: "19:30" } });
+    expect(boardMissing(m, "full")).toContain("presidente do meio de semana");
+  });
+});

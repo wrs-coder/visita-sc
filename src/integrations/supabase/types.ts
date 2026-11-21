@@ -565,6 +565,8 @@ export type Database = {
           id: string
           payload: Json
           permissions: Json
+          published_at: string | null
+          published_payload: Json | null
           superintendent_id: string
           updated_at: string
           visit_id: string
@@ -574,6 +576,8 @@ export type Database = {
           id?: string
           payload?: Json
           permissions?: Json
+          published_at?: string | null
+          published_payload?: Json | null
           superintendent_id: string
           updated_at?: string
           visit_id: string
@@ -583,6 +587,8 @@ export type Database = {
           id?: string
           payload?: Json
           permissions?: Json
+          published_at?: string | null
+          published_payload?: Json | null
           superintendent_id?: string
           updated_at?: string
           visit_id?: string

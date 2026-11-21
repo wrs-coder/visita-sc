@@ -571,7 +571,7 @@ async function renderSimpleBoardPdf(m: BoardModel, opts: BoardRenderOptions): Pr
 export function boardMissing(m: BoardModel, template: BoardTemplate): string[] {
   const out: string[] = [];
   if (template === "full") {
-    if (m.midweek.some((r) => /coment[aá]rios iniciais/i.test(r.text) && !r.who)) out.push("presidente do meio de semana");
+    if (!m.chairman?.trim()) out.push("presidente do meio de semana");
     const last = [...m.midweek].reverse().find((r) => r.italic && /ora[cç][aã]o/i.test(r.text));
     if (last && !last.who) out.push("oração final do meio de semana");
   } else {
