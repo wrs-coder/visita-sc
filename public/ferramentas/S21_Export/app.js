@@ -86,6 +86,7 @@
   function draw() {
     var open = Array.from(document.querySelectorAll(".card[open]")).map(function (d) { return d.dataset.i; });
     $("summary").hidden = !(list.length || failed.length);
+    $("cong").hidden = !list.length;
     $("actions").hidden = !list.length;
     $("list").innerHTML = list.map(card).join("");
     open.forEach(function (i) { var d = document.querySelector('.card[data-i="' + i + '"]'); if (d) d.open = true; });
@@ -120,34 +121,72 @@
   drop.addEventListener("drop", function (e) { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(function (f) { return /pdf$/i.test(f.name); })); });
   $("clear").addEventListener("click", function () { if (confirm("Limpar todos os cartões?")) { list = []; failed = []; render(); } });
 
-  function confirmTotals(what) {
+  function confirmTotals(what, extra) {
     var t = S21.totals(list);
-    return confirm("Confirme antes de gerar " + what + ":\n\nCartões: " + t.total + "\nPioneiros regulares: " + t.rp + "\nAnciãos: " + t.elder + "\nServos ministeriais: " + t.ms);
+    return confirm("Confirme antes de gerar " + what + ":\n\nCartões: " + t.total + "\nPioneiros regulares: " + t.rp + "\nAnciãos: " + t.elder + "\nServos ministeriais: " + t.ms + (extra ? "\n\n" + extra : ""));
   }
+
+  function download(data, name, type) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: type }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+
+  // Dados da congregação (só para o Circuit Manager), lembrados neste aparelho.
+  var CONG_KEY = "s21.cong";
+  Object.keys(S21.COUNTRIES).forEach(function (k) {
+    var o = document.createElement("option"); o.value = k; o.textContent = S21.COUNTRIES[k].label; $("congCountry").appendChild(o);
+  });
+  try {
+    var saved = JSON.parse(localStorage.getItem(CONG_KEY) || "{}");
+    $("congName").value = saved.name || ""; $("congNumber").value = saved.number || "";
+    if (S21.COUNTRIES[saved.country]) $("congCountry").value = saved.country;
+  } catch (e) {}
+  function cong() { return { name: $("congName").value.trim(), number: $("congNumber").value.replace(/\D/g, ""), country: $("congCountry").value }; }
+  ["congName", "congNumber", "congCountry"].forEach(function (id) {
+    $(id).addEventListener("change", function () { try { localStorage.setItem(CONG_KEY, JSON.stringify(cong())); } catch (e) {} });
+  });
+
+  $("exportJson").addEventListener("click", function () {
+    var c = cong();
+    if (!confirmTotals("o arquivo do Circuit Manager", "Congregação: " + (c.name || "(sem nome)") + (c.number ? " · Nº " + c.number : "") + " · " + S21.COUNTRIES[c.country].label)) return;
+    download(JSON.stringify(S21.toCircuit(list, { name: c.name, number: c.number, country: c.country, today: new Date() })), "hourglass-export.json", "application/json;charset=utf-8");
+  });
 
   $("exportXml").addEventListener("click", function () {
     if (!confirmTotals("o arquivo TSWin")) return;
-    var blob = new Blob([S21.toTswin(list, new Date())], { type: "application/xml;charset=utf-8" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = "Active.xml";
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    download(S21.toTswin(list, new Date()), "Active.xml", "application/xml;charset=utf-8");
   });
+
+  // Planilha igual ao modelo hourglass-import: datas e meses como data do Excel (aaaa-mm-dd / aaaa-mm),
+  // células sem valor realmente vazias e a aba validation oculta.
+  function dateCells(ws, col, fmt) {
+    var range = XLSX.utils.decode_range(ws["!ref"]);
+    for (var r = 1; r <= range.e.r; r++) {
+      var ref = XLSX.utils.encode_cell({ r: r, c: col }), cell = ws[ref];
+      if (!cell) continue;
+      var n = S21.excelSerial(cell.v);
+      if (n == null) { delete ws[ref]; continue; }
+      ws[ref] = { t: "n", v: n, z: fmt };
+    }
+  }
 
   $("export").addEventListener("click", function () {
     if (!confirmTotals("a planilha Hourglass")) return;
     var rows = S21.toRows(list);
-    var toDate = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + "T12:00:00") : v; };
-    rows.contacts.slice(1).forEach(function (r) { r[6] = toDate(r[6]) || null; r[7] = toDate(r[7]) || null; });
-    rows.reports.slice(1).forEach(function (r) { r[1] = toDate(r[1]); });
     var wb = XLSX.utils.book_new();
-    var c = XLSX.utils.aoa_to_sheet(rows.contacts, { cellDates: true, dateNF: "yyyy-mm-dd" });
-    var r = XLSX.utils.aoa_to_sheet(rows.reports, { cellDates: true, dateNF: "yyyy-mm-dd" });
+    var c = XLSX.utils.aoa_to_sheet(rows.contacts);
+    var r = XLSX.utils.aoa_to_sheet(rows.reports);
+    dateCells(c, 6, "yyyy-mm-dd"); dateCells(c, 7, "yyyy-mm-dd"); dateCells(r, 1, "yyyy-mm");
+    c["!cols"] = [{ wch: 5 }, { wch: 22 }, { wch: 18 }, { wch: 16 }, { wch: 8 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 7 }, { wch: 10 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 26 }, { wch: 10 }];
+    r["!cols"] = [{ wch: 5 }, { wch: 9 }, { wch: 7 }, { wch: 8 }, { wch: 10 }, { wch: 11 }, { wch: 36 }];
     var v = XLSX.utils.aoa_to_sheet([["Male", "MS", "Baptized Publisher", "Regular"], ["Female", "Elder", "Regular Pioneer", "Auxiliary"], [null, null, "Continuous Auxiliary Pioneer", null], [null, null, "Unbaptized Publisher", null], [null, null, "Student Only", null], [null, null, "Special Pioneer", null]]);
     XLSX.utils.book_append_sheet(wb, c, "contacts");
     XLSX.utils.book_append_sheet(wb, r, "reports");
     XLSX.utils.book_append_sheet(wb, v, "validation");
     wb.Workbook = { Sheets: [{ Hidden: 0 }, { Hidden: 0 }, { Hidden: 1 }] }; // validation oculta, como no modelo
-    XLSX.writeFile(wb, "hourglass-import.xlsx", { cellDates: true });
+    XLSX.writeFile(wb, "hourglass-import.xlsx");
   });
 })();

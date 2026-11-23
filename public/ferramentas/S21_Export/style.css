@@ -1,7 +1,7 @@
 :root{--bg:#f2f2f7;--card:#fff;--text:#1c1c1e;--muted:#6e6e73;--line:#e5e5ea;--accent:#0a63c9;--warn:#b25000;--ok:#1f8a3a;color-scheme:light dark}
 @media (prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--text:#f2f2f7;--muted:#98989f;--line:#38383a;--accent:#4a9eff;--warn:#ff9f0a;--ok:#32d74b}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 .top{padding:calc(20px + env(safe-area-inset-top)) 20px 8px;max-width:760px;margin:auto}
 .top h1{margin:0;font-size:28px;letter-spacing:-.02em}.top p{margin:4px 0 0;color:var(--muted);font-size:14px}
 main{max-width:760px;margin:auto;padding:12px 16px}
@@ -26,8 +26,11 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .months td{padding:3px 2px}.months input{min-height:36px;padding:6px}
 .months td:first-child{white-space:nowrap;padding-right:6px}
 .rm{margin-top:12px;background:none;border:0;color:var(--warn);font:inherit;padding:8px 0;cursor:pointer}
-.actions{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+.actions{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.actions h2,.cong h2{font-size:15px;font-weight:600;margin:0 4px 2px;color:var(--muted)}
+.cong{background:var(--card);border-radius:16px;padding:14px 16px;margin-top:16px}.cong h2{margin:0}.cong h2 small{font-weight:400;font-size:12px}.cong .grid{margin-top:8px;grid-template-columns:1fr 1fr}
 button{font:inherit;border-radius:14px;padding:12px 18px;min-height:48px;cursor:pointer;border:0}
 .primary{background:var(--accent);color:#fff;font-weight:600;flex:1;max-width:260px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;padding:8px 10px}.primary small{font-weight:400;font-size:11px;opacity:.85}
+.primary.dl{max-width:none;width:100%;align-items:flex-start;text-align:left;padding:10px 16px;font-size:16px}.dl b span{font-weight:400;opacity:.85}.primary.dl small{font-size:12px}
 .months input:disabled{opacity:.45}.ghost{background:var(--card);color:var(--text)}
 @media (max-width:420px){.totals{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}

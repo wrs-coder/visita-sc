@@ -68,7 +68,8 @@
       birth: toIso(g("900_2_Text_SanSerif")), baptism: baptism,
       appt: on(g("900_8_CheckBox")) ? "Elder" : on(g("900_9_CheckBox")) ? "MS" : "",
       status: (rp || sp || fm) ? "Regular Pioneer" : baptism ? "Baptized Publisher" : "Unbaptized Publisher",
-      serviceYear: sy, months: [], notes: []
+      serviceYear: sy, months: [], notes: [],
+      special: fm ? "fm" : sp ? "sp" : ""
     };
     if (sp) p.notes.push("Marcado como pioneiro especial");
     if (fm) p.notes.push("Marcado como missionário em campo");
@@ -116,18 +117,69 @@
 
   function hasData(m) { return m.participated || m.auxiliary || m.studies != null || m.hours != null || !!m.comments; }
 
-  /** Lista de publicadores → linhas das abas contacts e reports (Hourglass). */
+  function nz(v) { return v == null || v === "" ? null : v; }
+  function shared(m) { return !!(m.participated || (m.hours || 0) > 0 || (m.studies || 0) > 0); }
+
+  /** Valor da coluna "pioneer" no mês: Regular (pioneiro regular), Auxiliary (P.A. ou auxiliar contínuo) ou "". */
+  function pioneerOf(p, m) {
+    if (p.status === "Regular Pioneer") return "Regular";
+    return (p.status === "Continuous Auxiliary Pioneer" || (m && m.auxiliary)) ? "Auxiliary" : "";
+  }
+
+  /** Situação para o Hourglass: pioneiro especial marcado no cartão vira "Special Pioneer". */
+  function hgStatus(p, allowMissionary) {
+    if (p.status !== "Regular Pioneer") return p.status;
+    if (p.special === "fm" && allowMissionary) return "FieldMissionary";
+    return p.special === "sp" ? "Special Pioneer" : p.status;
+  }
+
+  /**
+   * Junta cartões da mesma pessoa (nome + nascimento). main = cartão do ano de serviço mais recente;
+   * months = { "aaaa-mm": {p, m} } com o mês que tem dados; keys = meses em ordem.
+   */
+  function groupPeople(list) {
+    var groups = [], byKey = {};
+    list.forEach(function (p) {
+      var k = personKey(p);
+      if (!byKey[k]) { byKey[k] = { cards: [] }; groups.push(byKey[k]); }
+      byKey[k].cards.push(p);
+    });
+    return groups.map(function (g) {
+      var months = {};
+      var main = g.cards.slice().sort(function (a, b) { return (serviceYearEnd(a.serviceYear) || 0) - (serviceYearEnd(b.serviceYear) || 0); })[g.cards.length - 1];
+      g.cards.forEach(function (p) {
+        p.months.forEach(function (m) {
+          if (!m.month) return;
+          var prev = months[m.month];
+          if (!prev || (!hasData(prev.m) && hasData(m))) months[m.month] = { p: p, m: m };
+        });
+      });
+      return { main: main, cards: g.cards, months: months, keys: Object.keys(months).sort() };
+    });
+  }
+
+  /** "aaaa-mm-dd" → número de série do Excel (dias desde 30/12/1899), como no modelo do Hourglass. */
+  function excelSerial(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str(iso)); if (!m) return null;
+    return Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 86400000);
+  }
+
+  /**
+   * Lista de publicadores → linhas das abas contacts e reports (Hourglass), mesma ordem do modelo.
+   * Células sem valor vão como null (vazias de verdade). Cartões da mesma pessoa viram um só contato.
+   */
   function toRows(list) {
     var contacts = [["ID","lastname","firstname","middlename","suffix","sex","birth","baptism","appt","pioneerid","email","cellphone","homephone","address_line1","address_line2","address_city","address_state","address_postalcode","status","label"]];
     var reports = [["ID","month","hours","studies","pioneer","credithours","comments"]];
-    list.forEach(function (p, idx) {
-      var id = idx + 1;
-      contacts.push([id, p.lastname, p.firstname, p.middlename, p.suffix, p.sex, p.birth, p.baptism, p.appt, "", "", "", "", "", "", "", "", "", p.status, ""]);
-      p.months.forEach(function (m) {
-        if (!m.month || !hasData(m)) return;
+    groupPeople(list).forEach(function (g, idx) {
+      var id = idx + 1, p = g.main;
+      contacts.push([id, nz(p.lastname), nz(p.firstname), nz(p.middlename), nz(p.suffix), nz(p.sex), nz(p.birth), nz(p.baptism), nz(p.appt), null, null, null, null, null, null, null, null, null, hgStatus(p, false), null]);
+      g.keys.forEach(function (k) {
+        var q = g.months[k].p, m = g.months[k].m;
+        if (!hasData(m)) return;
         // Publicador comum: Hourglass recebe 1 hora quando participou (como no modelo oficial); a tela não mostra.
-        var hours = hoursAllowed(p, m) ? m.hours : (m.participated || (m.hours || 0) > 0 || (m.studies || 0) > 0) ? 1 : null;
-        reports.push([id, m.month + "-01", hours, m.studies, m.auxiliary ? "Auxiliary" : "", null, m.comments]);
+        var hours = hoursAllowed(q, m) ? m.hours : shared(m) ? 1 : null;
+        reports.push([id, k + "-01", nz(hours), nz(m.studies), nz(pioneerOf(q, m)), null, nz(m.comments)]);
       });
     });
     return { contacts: contacts, reports: reports };
@@ -155,26 +207,12 @@
    * que terminam no último mês dos seus cartões.
    */
   function toTswin(list, today) {
-    var groups = [], byKey = {};
-    list.forEach(function (p) {
-      var k = personKey(p);
-      if (!byKey[k]) { byKey[k] = { cards: [] }; groups.push(byKey[k]); }
-      byKey[k].cards.push(p);
-    });
+    var groups = groupPeople(list);
     var d = today || new Date();
     var date = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     var L = ["<PUBLIST>", '<Agent Ver="9000">Tswin</Agent>', "<Date>" + date + "</Date>", "<Count>" + groups.length + "</Count>", "<Active>"];
     groups.forEach(function (g, idx) {
-      var months = {}, last = "";
-      var main = g.cards.slice().sort(function (a, b) { return (serviceYearEnd(a.serviceYear) || 0) - (serviceYearEnd(b.serviceYear) || 0); })[g.cards.length - 1];
-      g.cards.forEach(function (p) {
-        p.months.forEach(function (m) {
-          if (!m.month) return;
-          var prev = months[m.month];
-          if (!prev || (!hasData(prev.m) && hasData(m))) months[m.month] = { p: p, m: m };
-          if (m.month > last) last = m.month;
-        });
-      });
+      var months = g.months, main = g.main, last = g.keys[g.keys.length - 1] || "";
       if (!last) last = date.slice(0, 7);
       var endY = Number(last.slice(0, 4)), endM = Number(last.slice(5, 7));
       var male = main.sex === "Male", baptized = !!main.baptism && main.status !== "Unbaptized Publisher";
@@ -202,6 +240,134 @@
     return L.join("\r\n") + "\r\n";
   }
 
-  var api = { MONTHS: MONTHS, STATUS: STATUS, toIso: toIso, splitName: splitName, serviceYearEnd: serviceYearEnd, monthIso: monthIso, hoursAllowed: hoursAllowed, setServiceYear: setServiceYear, fromFields: fromFields, warnings: warnings, totals: totals, toRows: toRows, toTswin: toTswin };
+  // ---------- Circuit Manager (hourglass-export.json) ----------
+
+  /** País da congregação. Os números internos só são conhecidos para os países do modelo (pt-PT). */
+  var COUNTRIES = {
+    BR: { label: "Brasil", country: { id: null, code: "BR", name: "Brazil", datefmt: "dd/mm/yyyy", namefmt: "first", addrfmt: "c", paper_size: "a4" }, timezone: { id: null, name: "America/Sao_Paulo", offset: "-03:00", countrycode: "BR" }, locale: { id: null, code: "pt-BR", name: "Portuguese (Brazil)", symbol: "T" } },
+    AO: { label: "Angola", country: { id: 50, code: "AO", name: "Angola", datefmt: "dd/mm/yyyy", namefmt: "first", addrfmt: "c", paper_size: "a4" }, timezone: { id: 87, name: "Africa/Luanda", offset: "+01:00", countrycode: "AO" }, locale: { id: 10, code: "pt-PT", name: "Portuguese (Portugal)", symbol: "TPO" } },
+    PT: { label: "Portugal", country: { id: null, code: "PT", name: "Portugal", datefmt: "dd/mm/yyyy", namefmt: "first", addrfmt: "c", paper_size: "a4" }, timezone: { id: null, name: "Europe/Lisbon", offset: "+00:00", countrycode: "PT" }, locale: { id: 10, code: "pt-PT", name: "Portuguese (Portugal)", symbol: "TPO" } },
+    MZ: { label: "Moçambique", country: { id: null, code: "MZ", name: "Mozambique", datefmt: "dd/mm/yyyy", namefmt: "first", addrfmt: "c", paper_size: "a4" }, timezone: { id: null, name: "Africa/Maputo", offset: "+02:00", countrycode: "MZ" }, locale: { id: 10, code: "pt-PT", name: "Portuguese (Portugal)", symbol: "TPO" } }
+  };
+
+  var PRIVILEGES = ["attendant","aux_chairman","cbs","cbs_reader","chairman","chairman2","chairman3","cleaning","closeprayer","conductFS","console","dfg","fm_discussion","fs_assistant","hh","host","initcall","interpreter","lac","localneeds","mics","mm_chairman","none","openprayer","prayer","pt","pt_out","publicMinistry","reading","rv","security_attendant","stage","stream","study","stutalk","treasures","video","wm_chairman","wm_reader","wt_conductor","zoom_attendant"];
+  var E2E = ["e2e_iv","e2e_firstname","e2e_middlename","e2e_lastname","e2e_suffix","e2e_pioneerid","e2e_birth","e2e_baptism","e2e_email","e2e_cellphone","e2e_homephone","e2e_otherphone","e2e_comments"];
+
+  function copy(o) { return JSON.parse(JSON.stringify(o)); }
+  function isoStamp(d) { return d.toISOString().replace(/\.\d{3}Z$/, "Z"); }
+  function ym(y, m) { return y + "-" + String(m).padStart(2, "0"); }
+  function nextYm(k) { var y = +k.slice(0, 4), m = +k.slice(5, 7) + 1; if (m > 12) { m = 1; y++; } return ym(y, m); }
+
+  /** Identificador estável (mesmo texto → mesmo código), no formato de um UUID v4. */
+  function stableUuid(text) {
+    var hex = "", seeds = [0x811c9dc5, 0x01000193, 0x9e3779b9, 0x85ebca6b];
+    seeds.forEach(function (seed) {
+      var h = seed >>> 0;
+      for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; h ^= h >>> 13; }
+      h = Math.imul(h ^ (h >>> 16), 2246822507) >>> 0;
+      hex += ("00000000" + h.toString(16)).slice(-8);
+    });
+    hex = hex.slice(0, 12) + "4" + hex.slice(13, 16) + ((parseInt(hex[16], 16) & 3) | 8).toString(16) + hex.slice(17);
+    return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" + hex.slice(16, 20) + "-" + hex.slice(20, 32);
+  }
+
+  function emptyTotals() { return { active: 0, count: 0, createdAt: null, hours: 0, lateReports: 0, minutes: 0, placements: 0, returnvisits: 0, rolloverMinutes: 0, studies: 0, videoshowings: 0 }; }
+
+  /**
+   * Lista de publicadores → objeto no mesmo formato do hourglass-export.json (mesmas seções e campos,
+   * na mesma ordem). Relatório só nos meses em que a pessoa participou: publicador comum = 1 hora
+   * (60 minutos), pioneiro = horas do cartão. opts: { name, number, country, today }.
+   */
+  function toCircuit(list, opts) {
+    opts = opts || {};
+    var now = opts.today || new Date(), stamp = isoStamp(now);
+    var number = parseInt(str(opts.number), 10); if (!(number > 0)) number = null;
+    var preset = COUNTRIES[opts.country] || COUNTRIES.BR;
+    var congId = number || 1, name = str(opts.name) || null;
+    var congregation = {
+      id: congId, number: number, number_verified: false, name: name,
+      locales_id: preset.locale.id, timezones_id: preset.timezone.id, countries_id: preset.country.id,
+      registered_at: stamp, abandonedreminder: null, abandonedremindercount: 0, lastreminder: null,
+      address: null, phone: null, guid: stableUuid("cong|" + (number || "") + "|" + (name || "")).toUpperCase(),
+      wmdow: null, wmtime: null, mmdow: null, mmtime: null,
+      wmdow_future: null, wmtime_future: null, mmdow_future: null, mmtime_future: null, future_start_date: null,
+      last_updated: stamp, last_checked: null, unmanaged: false, jworg_not_found: false, jworg_skip: false,
+      kind: "cong", jworg_langcode: preset.locale.symbol, circuit_id: null,
+      country: copy(preset.country), timezone: copy(preset.timezone), locale: copy(preset.locale)
+    };
+
+    // Números internos estáveis e sempre abaixo de 2.147.483.647 (inteiro comum), como no modelo.
+    var publishers = [], reports = [], pubBase = (congId % 2000000) * 1000, repBase = (congId % 100000) * 20000;
+    groupPeople(list).forEach(function (g, idx) {
+      var p = g.main, id = pubBase + idx + 1;
+      var pub = {
+        id: id, uuid: stableUuid(congId + "|" + personKey(p)),
+        firstname: nz(p.firstname), lastname: nz(p.lastname), middlename: nz(p.middlename),
+        sex: nz(p.sex), birth: nz(p.birth), baptism: nz(p.baptism), pioneerid: null, appt: nz(p.appt),
+        email: null, cellphone: null, homephone: null, otherphone: null, address_id: null, comments: null,
+        congregations_id: congId, smpw_root_zone_id: null, group_id: null, family_id: null, language_group_id: null,
+        firstmonth: null, status: hgStatus(p, true), suffix: nz(p.suffix), descriptor: null,
+        loginemail: null, lastlogin: null, lastmobiletoken: null, emailbounce: false, locales_id: null,
+        revoked: false, anointed: false, familycontact: false, rpquota: null, advdirective: false,
+        reportstobranch: false, piiconsentdate: null
+      };
+      E2E.forEach(function (k) { pub[k] = null; });
+      pub.googleauth = false; pub.appleauth = false; pub.sgo = false; pub.locale = null;
+      pub.mobilepush = false; pub.pubinvite = null; pub.tags = [];
+      publishers.push(pub);
+
+      g.keys.forEach(function (k) {
+        var q = g.months[k].p, m = g.months[k].m;
+        if (!shared(m) && !m.auxiliary) return; // sem relatório quando não participou
+        var y = +k.slice(0, 4), mo = +k.slice(5, 7);
+        var minutes = hoursAllowed(q, m) ? Math.round((m.hours || 0) * 60) : 60;
+        reports.push({
+          id: repBase + reports.length + 1, user: { id: id }, month: mo, year: y,
+          placements: null, videoshowings: null, minutes_as_hours: String(Math.round(minutes / 60 * 100) / 100), minutes: minutes,
+          pioneer: nz(pioneerOf(q, m)), returnvisits: null, studies: m.studies == null ? null : m.studies,
+          credithours: null, remarks: nz(m.comments), submitted_month: k, reported_at: stamp, reported_by: null
+        });
+      });
+    });
+
+    // Totais por mês: do primeiro relatório até o mês anterior à data de hoje (como no modelo).
+    var monthlyTotals = [];
+    if (reports.length) {
+      var first = reports.reduce(function (a, r) { return r.submitted_month < a ? r.submitted_month : a; }, "9999-99");
+      var lastR = reports.reduce(function (a, r) { return r.submitted_month > a ? r.submitted_month : a; }, "");
+      var prev = now.getMonth() === 0 ? ym(now.getFullYear() - 1, 12) : ym(now.getFullYear(), now.getMonth());
+      var end = lastR > prev ? lastR : prev;
+      for (var k = first; k <= end; k = nextYm(k)) {
+        var t = { month: k, aux: emptyTotals(), pub: emptyTotals(), reg: emptyTotals() };
+        reports.forEach(function (r) {
+          if (r.submitted_month !== k) return;
+          var b = r.pioneer === "Auxiliary" ? t.aux : r.pioneer === "Regular" ? t.reg : t.pub;
+          b.count++; b.minutes += r.minutes; b.studies += r.studies || 0;
+        });
+        [t.aux, t.pub, t.reg].forEach(function (b) { b.hours = Math.floor(b.minutes / 60); });
+        monthlyTotals.push(t);
+      }
+    }
+
+    // Assistência: meses zerados do mês atual até setembro de 3 anos de serviço atrás (como no modelo).
+    var attendance = [], cy = now.getFullYear(), cm = now.getMonth() + 1;
+    var startY = (cm >= 9 ? cy : cy - 1) - 3;
+    for (var y2 = cy, m2 = cm; y2 > startY || (y2 === startY && m2 >= 9);) {
+      attendance.push({ month: ym(y2, m2), attendanceGroupId: 0, mwAvg: 0, mwCount: 0, mwTotal: 0, weAvg: 0, weCount: 0, weTotal: 0 });
+      if (--m2 === 0) { m2 = 12; y2--; }
+    }
+
+    var privileges = {};
+    PRIVILEGES.forEach(function (k) { privileges[k] = []; });
+
+    return {
+      congregation: congregation, publishers: publishers, addresses: [], fsGroups: [],
+      attendance: { attendance: attendance, attendanceGroups: [{ id: 0, name: "" }] },
+      reports: reports, notPublishers: null, monthlyTotals: monthlyTotals, privileges: privileges,
+      territories: [], territoryRecords: []
+    };
+  }
+
+  var api = { MONTHS: MONTHS, STATUS: STATUS, toIso: toIso, splitName: splitName, serviceYearEnd: serviceYearEnd, monthIso: monthIso, hoursAllowed: hoursAllowed, setServiceYear: setServiceYear, fromFields: fromFields, warnings: warnings, totals: totals, toRows: toRows, toTswin: toTswin, excelSerial: excelSerial, toCircuit: toCircuit, COUNTRIES: COUNTRIES };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.S21 = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
