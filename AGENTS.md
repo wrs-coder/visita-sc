@@ -42,5 +42,5 @@
 - The Bible-tab chapter reader (CleanReader) keeps its own device-local preferences in bible-reader-settings.ts and uses reader-native.ts (TTS/brightness plugins with web fallback), because the verse popover used by outlines and notes must stay unchanged.
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
-- Outline edit mode hides page chrome, details open in a dialog, handle height is device-local.
-- S-21 converter: standalone page in public/ferramentas/S21_Export, skipped by sw.js and dist-app, so it never touches the app.
+- Outline edit mode hides chrome; details in a dialog.
+- S-21 converter lives only in public/ferramentas (excluded from sw.js/dist-app).
