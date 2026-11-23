@@ -1,17 +1,61 @@
-# Troca de senha: mensagem clara quando a senha é fraca
+# Conversor S-21 → Hourglass (ferramenta separada do VisitaSC)
 
-## O que aconteceu (registros de hoje, 19:42–19:47)
-- Foram duas tentativas de trocar a senha, e as duas foram recusadas com a resposta "senha conhecida como fraca e fácil de adivinhar". O sistema bloqueia senhas que já apareceram em vazamentos públicos.
-- Por isso a senha **não mudou**. Depois disso, as entradas com a senha nova deram "senha inválida". A senha antiga continua valendo.
-- O app mostra o erro em inglês, em letra miúda, e é fácil não perceber.
+## Resposta curta
+Sim, é possível. O cartão S-21 enviado é um PDF **preenchível** (75 campos): nome, nascimento, batismo, sexo, ancião/servo/pioneiro e os 12 meses (participou, estudos, pioneiro auxiliar, horas, observações). Dá para ler esses campos com precisão, sem "adivinhar" texto. A planilha do Hourglass tem 3 abas: `contacts`, `reports` e `validation` — a ferramenta preenche as duas primeiras e mantém a terceira igual.
 
-## O que vou mudar
-1. Traduzir esse erro: "Essa senha é muito comum ou já apareceu em vazamentos. Escolha outra (ex.: uma frase com números)."
-2. Mostrar uma dica abaixo do campo de senha: no mínimo 8 caracteres, misturando letras, números e símbolos.
-3. Aplicar isso nas 3 telas de senha: Perfil, Redefinir senha e Esqueci a senha.
-4. Na tela de entrada, traduzir também "senha inválida" para "E-mail ou senha incorretos".
+## Melhor forma, sem mexer no VisitaSC
+Uma **página independente**, fora do aplicativo:
+
+- Endereço próprio: `visitasc.com.br/ferramentas/hourglass/` (link não aparece em nenhum menu do app).
+- É um arquivo à parte (HTML + scripts próprios), **não entra na compilação** do app nem no APK da Play Store.
+- Não usa login, banco de dados nem nuvem do VisitaSC.
+- **Tudo é processado no próprio aparelho** do ancião: os PDFs não são enviados para nenhum servidor (dados pessoais dos publicadores ficam protegidos).
+- Acesso exclusivo por **código de acesso** digitado na entrada (guardado só como hash; você troca quando quiser).
+
+## Como fica a tela (celular)
+```text
+┌─────────────────────────────┐
+│  Conversor S-21 → Hourglass │
+├─────────────────────────────┤
+│ Código de acesso            │
+│ [ •••••• ]      [ Entrar ]  │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│  Conversor S-21 → Hourglass │
+├─────────────────────────────┤
+│ ┌─────────────────────────┐ │
+│ │  ⬆  Selecionar cartões  │ │
+│ │  S-21 (PDF, vários)     │ │
+│ └─────────────────────────┘ │
+│                             │
+│ 12 cartões lidos · 1 aviso  │
+│ ┌─────────────────────────┐ │
+│ │ Alidanio A. A. Cadete ✓ │ │
+│ │ Masc · Ancião · 12 meses│ │
+│ ├─────────────────────────┤ │
+│ │ Maria Souza          ⚠  │ │
+│ │ Sem data de batismo     │ │
+│ └─────────────────────────┘ │
+│                             │
+│ [ Baixar hourglass-import ] │
+└─────────────────────────────┘
+```
+
+## Regras de conversão
+- Nome completo → `firstname` (primeiro nome), `lastname` (último), `middlename` (o meio).
+- Sexo, nascimento, batismo → `sex`, `birth`, `baptism`.
+- Ancião → `appt = Elder`; Servo ministerial → `MS`.
+- Pioneiro regular → `status = Regular Pioneer`; batizado → `Baptized Publisher`; sem batismo → `Unbaptized Publisher`.
+- Cada mês do ano de serviço (ex.: 2025/2026: setembro = 2025-09 … agosto = 2026-08) → uma linha em `reports` com horas, estudos, `pioneer = Auxiliary` se marcado, observações.
+- Meses sem nenhum dado não geram linha.
+- `ID` numerado 1, 2, 3… ligando `contacts` e `reports`.
+- Campos sem correspondência no S-21 (e-mail, telefone, endereço) ficam vazios.
+- Cartões escaneados (sem campos) aparecem com aviso "não pôde ser lido".
 
 ## Detalhes técnicos
-- Nova função `friendlyAuthError(err, t)` que reconhece `weak_password` e `invalid_credentials` e devolve o texto traduzido. Ela é usada em `_app.perfil.tsx`, `redefinir-senha.tsx`, `esqueci-senha.tsx` e na tela de login.
-- Novas chaves de tradução em pt, en e es, e um teste da função.
-- A proteção contra senhas vazadas **continua ligada**.
+- Página estática em `public/ferramentas/hourglass/` com bibliotecas próprias (pdf-lib para ler os campos, SheetJS para gerar o .xlsx) copiadas para a pasta — nada importado do código do app.
+- Gera o `.xlsx` a partir do modelo enviado (abas e validações preservadas).
+- `noindex` para não aparecer no Google.
+- Teste com o S-21 enviado conferindo os valores extraídos na planilha final.
+- Registro no AGENTS.md: ferramenta isolada em `public/`, sem dependência do app.
