@@ -60,3 +60,4 @@
 - [x] Versão 6.0.1 (versionCode 50) sem "O que há de novo"
 
 - [x] Conversor S-21 em /ferramentas/S21_Export/ (sem código, edição antes de gerar, totais pioneiros/anciãos/servos)
+- [x] Conversor S-21: horas só para pioneiros/P.A., ano 2026/2027 = 2027, exportação TSWin (Active.xml)

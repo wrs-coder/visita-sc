@@ -29,6 +29,12 @@
     return '<select data-k="' + key + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === val ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select>";
   }
 
+  // Horas só para pioneiro regular/auxiliar contínuo ou mês marcado como P.A.; o valor lido fica guardado.
+  function hoursCell(p, m) {
+    var ok = S21.hoursAllowed(p, m);
+    return '<td><input inputmode="decimal" data-mk="hours" value="' + (ok ? esc(m.hours) : "") + '"' + (ok ? "" : ' disabled placeholder="—" title="Horas só para pioneiros"') + ' aria-label="Horas"></td>';
+  }
+
   function card(p, i) {
     var w = S21.warnings(p);
     var role = p.appt === "Elder" ? "Ancião" : p.appt === "MS" ? "Servo ministerial" : "";
@@ -38,7 +44,7 @@
         '<td><input type="checkbox" data-mk="participated"' + (m.participated ? " checked" : "") + ' aria-label="Participou"></td>' +
         '<td><input inputmode="numeric" data-mk="studies" value="' + esc(m.studies) + '" aria-label="Estudos"></td>' +
         '<td><input type="checkbox" data-mk="auxiliary"' + (m.auxiliary ? " checked" : "") + ' aria-label="Pioneiro auxiliar"></td>' +
-        '<td><input inputmode="decimal" data-mk="hours" value="' + esc(m.hours) + '" aria-label="Horas"></td>' +
+        hoursCell(p, m) +
         '<td><input data-mk="comments" value="' + esc(m.comments) + '" aria-label="Observações"></td></tr>';
     }).join("");
     return '<details class="card" data-i="' + i + '"><summary><div><strong>' + esc([p.firstname, p.middlename, p.lastname].join(" ").replace(/\s+/g, " ").trim() || p.file) + '</strong>' +
@@ -53,6 +59,7 @@
       '<label>Designação' + sel("appt", p.appt, [["", "Nenhuma"], ["Elder", "Ancião"], ["MS", "Servo ministerial"]]) + '</label>' +
       '<label>Nascimento<input type="date" data-k="birth" value="' + esc(p.birth) + '"></label>' +
       '<label>Batismo<input type="date" data-k="baptism" value="' + esc(p.baptism) + '"></label>' +
+      '<label class="full">Ano de serviço<input data-k="serviceYear" value="' + esc(p.serviceYear) + '" placeholder="Ex.: 2026/2027"></label>' +
       '<label class="full">Situação' + sel("status", p.status, [["Baptized Publisher", "Publicador batizado"], ["Unbaptized Publisher", "Publicador não batizado"], ["Regular Pioneer", "Pioneiro regular"], ["Continuous Auxiliary Pioneer", "Pioneiro auxiliar contínuo"]]) + '</label>' +
       '</div><table class="months"><thead><tr><th>' + esc(p.serviceYear || "Mês") + '</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th>Obs.</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<button class="rm" data-rm>Remover este cartão</button></div></details>';
@@ -69,7 +76,14 @@
     $("warnline").textContent = parts.join(" · ");
   }
 
+  var rendering = false;
   function render() {
+    if (rendering) return; // trocar a lista tira o foco do campo e dispara outro "change"
+    rendering = true;
+    try { draw(); } finally { rendering = false; }
+  }
+
+  function draw() {
     var open = Array.from(document.querySelectorAll(".card[open]")).map(function (d) { return d.dataset.i; });
     $("summary").hidden = !(list.length || failed.length);
     $("actions").hidden = !list.length;
@@ -81,10 +95,14 @@
   $("list").addEventListener("change", function (e) {
     var el = e.target, c = el.closest(".card"); if (!c) return;
     var p = list[Number(c.dataset.i)];
+    if (el.dataset.k === "serviceYear") { S21.setServiceYear(p, el.value); render(); return; }
     if (el.dataset.k) { p[el.dataset.k] = el.value; render(); return; }
     if (el.dataset.mk) {
       var m = p.months[Number(el.closest("tr").dataset.m)], k = el.dataset.mk;
-      if (el.type === "checkbox") m[k] = el.checked;
+      if (el.type === "checkbox") {
+        m[k] = el.checked;
+        if (k === "auxiliary") { var tr = el.closest("tr"); tr.querySelector('[data-mk="hours"]').closest("td").outerHTML = hoursCell(p, m); }
+      }
       else if (k === "comments") m[k] = el.value.trim();
       else { var n = Number(el.value.replace(",", ".")); m[k] = el.value.trim() && isFinite(n) ? n : null; }
     }
@@ -102,9 +120,22 @@
   drop.addEventListener("drop", function (e) { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files).filter(function (f) { return /pdf$/i.test(f.name); })); });
   $("clear").addEventListener("click", function () { if (confirm("Limpar todos os cartões?")) { list = []; failed = []; render(); } });
 
-  $("export").addEventListener("click", function () {
+  function confirmTotals(what) {
     var t = S21.totals(list);
-    if (!confirm("Confirme antes de gerar:\n\nCartões: " + t.total + "\nPioneiros regulares: " + t.rp + "\nAnciãos: " + t.elder + "\nServos ministeriais: " + t.ms)) return;
+    return confirm("Confirme antes de gerar " + what + ":\n\nCartões: " + t.total + "\nPioneiros regulares: " + t.rp + "\nAnciãos: " + t.elder + "\nServos ministeriais: " + t.ms);
+  }
+
+  $("exportXml").addEventListener("click", function () {
+    if (!confirmTotals("o arquivo TSWin")) return;
+    var blob = new Blob([S21.toTswin(list, new Date())], { type: "application/xml;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "Active.xml";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  });
+
+  $("export").addEventListener("click", function () {
+    if (!confirmTotals("a planilha Hourglass")) return;
     var rows = S21.toRows(list);
     var toDate = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + "T12:00:00") : v; };
     rows.contacts.slice(1).forEach(function (r) { r[6] = toDate(r[6]) || null; r[7] = toDate(r[7]) || null; });
