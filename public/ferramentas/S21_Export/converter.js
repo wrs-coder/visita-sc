@@ -125,7 +125,8 @@
       contacts.push([id, p.lastname, p.firstname, p.middlename, p.suffix, p.sex, p.birth, p.baptism, p.appt, "", "", "", "", "", "", "", "", "", p.status, ""]);
       p.months.forEach(function (m) {
         if (!m.month || !hasData(m)) return;
-        var hours = hoursAllowed(p, m) ? m.hours : null;
+        // Publicador comum: Hourglass recebe 1 hora quando participou (como no modelo oficial); a tela não mostra.
+        var hours = hoursAllowed(p, m) ? m.hours : (m.participated || (m.hours || 0) > 0 || (m.studies || 0) > 0) ? 1 : null;
         reports.push([id, m.month + "-01", hours, m.studies, m.auxiliary ? "Auxiliary" : "", null, m.comments]);
       });
     });

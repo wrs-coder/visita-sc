@@ -143,10 +143,11 @@
     var wb = XLSX.utils.book_new();
     var c = XLSX.utils.aoa_to_sheet(rows.contacts, { cellDates: true, dateNF: "yyyy-mm-dd" });
     var r = XLSX.utils.aoa_to_sheet(rows.reports, { cellDates: true, dateNF: "yyyy-mm-dd" });
-    var v = XLSX.utils.aoa_to_sheet([["Male", "MS", "Baptized Publisher", "Regular"], ["Female", "Elder", "Regular Pioneer", "Auxiliary"], [null, null, "Continuous Auxiliary Pioneer", null], [null, null, "Unbaptized Publisher", null]]);
+    var v = XLSX.utils.aoa_to_sheet([["Male", "MS", "Baptized Publisher", "Regular"], ["Female", "Elder", "Regular Pioneer", "Auxiliary"], [null, null, "Continuous Auxiliary Pioneer", null], [null, null, "Unbaptized Publisher", null], [null, null, "Student Only", null], [null, null, "Special Pioneer", null]]);
     XLSX.utils.book_append_sheet(wb, c, "contacts");
     XLSX.utils.book_append_sheet(wb, r, "reports");
     XLSX.utils.book_append_sheet(wb, v, "validation");
+    wb.Workbook = { Sheets: [{ Hidden: 0 }, { Hidden: 0 }, { Hidden: 1 }] }; // validation oculta, como no modelo
     XLSX.writeFile(wb, "hourglass-import.xlsx", { cellDates: true });
   });
 })();
