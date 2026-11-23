@@ -43,3 +43,4 @@
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
 - Outline edit mode hides page chrome, details open in a dialog, handle height is device-local.
+- The S-21 converter is a standalone static page in public/ferramentas/S21_Export (own libs, device-only parsing, skipped by sw.js and removed from dist-app); the route file only serves its HTML in dev, because it must never touch the app.

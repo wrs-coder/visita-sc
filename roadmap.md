@@ -58,3 +58,5 @@
 - [x] Tempo por tópico dentro das configurações do cronômetro
 - [x] Ajuda atualizada
 - [x] Versão 6.0.1 (versionCode 50) sem "O que há de novo"
+
+- [x] Conversor S-21 em /ferramentas/S21_Export/ (sem código, edição antes de gerar, totais pioneiros/anciãos/servos)

@@ -87,6 +87,8 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
+  // Ferramentas avulsas (/ferramentas/*) ficam fora do app: sem cache do SW.
+  if (sameOrigin && url.pathname.startsWith("/ferramentas/")) return;
 
   // HTML navigations → NetworkFirst, com fallback para QUALQUER HTML em cache
   if (req.mode === "navigate") {

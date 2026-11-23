@@ -336,6 +336,8 @@ async function assemble(dir, shellHtml) {
   // Casca intermediária não deve ficar duplicada dentro do APK.
   await rmWithRetries(path.join(outDir, "_shell.html"));
   await rmWithRetries(path.join(outDir, "_shell"), { recursive: true });
+  // Ferramentas avulsas do site (ex.: Conversor S-21) nunca entram no APK.
+  await rmWithRetries(path.join(outDir, "ferramentas"), { recursive: true });
   // O cache offline do site (service worker) não roda no app instalado e
   // qualquer resíduo dele volta a causar tela branca: não vai no pacote.
   await rmWithRetries(path.join(outDir, "sw.js"));
