@@ -76,8 +76,24 @@ E no topo de Pioneiros reg.: "3 sem marcação · [Marcar todos]".
 ## 8. Ícone próprio ao instalar (09)
 Nome "Analisador de congregações_SC", ícone diferente e endereço limitado a `/ferramentas/Analisador/`. Funciona como atalho na tela inicial (sem modo offline). Quem já instalou o VisitaSC não é afetado.
 
+## 9. Grupo "Inativos" (novo)
+Fica separado, como os Pioneiros, e não conta nos grupos de campo.
+Vai para Inativos quem:
+- tem a palavra "inativo" em qualquer parte do cartão importado, ou
+- está **6 meses seguidos ou mais** sem pregar (até o último mês com relatório).
+
+Quem está **4 ou 5 meses seguidos** sem pregar continua no grupo, com alerta vermelho:
+```text
+│ Grupo 1  [ Inativos 3 ]          │
+│ ⚠ Perigo de ficar inativo (2)    │
+│ ▸ Carlos Melo   5 meses sem pregar│
+│ ▸ Rita Paz      4 meses sem pregar│
+```
+Se a pessoa voltar a pregar e for recalculado, ela volta ao grupo de origem sozinha (o grupo original fica guardado). O cartão mostra "Inativo — motivo: palavra no cartão / 6+ meses".
+
 ## Detalhes técnicos
 - `analyzer.js`: `parseDateAny()` (números, ISO, meses pt por extenso/abreviados, ano de 2 dígitos) usada em PDF/JSON/XML; `belowGoalMonths()`; `needsRpMark()`.
 - `app.js`: estado salvo em IndexedDB (`analisador.state`, fallback localStorage) com debounce; edições ficam em rascunho por cartão até "Aplicar"; diálogo de seções do PDF (prefs em localStorage); visão Geral agrupada; ação marcar pioneiro (`status`/`special`).
 - `manifest.webmanifest` próprio em `public/ferramentas/Analisador/` com `id`/`scope`/`start_url` nessa pasta + ícones; só `<link rel=manifest>` no index.html. Sem service worker.
+- `inactiveInfo(card)`: busca "inativ" em comentários/campos e conta meses seguidos sem participação; grupo virtual "inactive" fora de monthlyTotals dos grupos de campo; `homeGroup` preservado.
 - Testes novos em `ferramentas-testes/` (datas, meses <50 h, marcação); guardião de isolamento continua passando. Commit "ferramentas:".
