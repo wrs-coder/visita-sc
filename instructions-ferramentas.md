@@ -58,3 +58,5 @@ Este arquivo vale só para as ferramentas do site. O aplicativo VisitaSC segue o
 - Meta dos pioneiros mostra os meses abaixo de 50 h com horas e observação.
 
 - Analisador: alerta "Possíveis pioneiros regulares" para quem não é PR nem inativo e tem mês com 35 h ≤ horas < 50 h; a decisão (marcar PR / potencial / ignorar) fica salva e vira anotação do superintendente. A aba Inativos mostra só os cards "Inativos Batizados" e "Inativos Não Batizados", sem Totais mensais.
+
+- Datas (Conversor S-21 e Analisador): mesma regra — aceita dd/mm/aaaa, sem separador, por extenso e aaaa-mm-dd; ano com 2 dígitos maior que o ano atual vira 19xx; tela usa campo livre dd/mm/aaaa com aviso ⚠ quando não entendida.

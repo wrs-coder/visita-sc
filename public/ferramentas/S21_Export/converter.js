@@ -8,11 +8,41 @@
   function num(v) { var s = str(v).replace(",", "."); if (!s) return null; var n = Number(s); return isFinite(n) ? n : null; }
   function on(v) { return v === true || /^\/?(yes|on|sim)$/i.test(str(v)); }
 
-  /** "dd/mm/aaaa" → "aaaa-mm-dd" (vazio se não reconhecer). */
-  function toIso(v) {
-    var s = str(v), m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
-    if (m) { var y = m[3].length === 2 ? "20" + m[3] : m[3]; return y + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0"); }
-    return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : "";
+  // ---------- datas em qualquer formato (mesma regra do Analisador) ----------
+  var MESES = { jan: 1, fev: 2, feb: 2, mar: 3, abr: 4, apr: 4, mai: 5, may: 5, jun: 6, jul: 7, ago: 8, aug: 8, set: 9, sep: 9, out: 10, oct: 10, nov: 11, dez: 12, dec: 12 };
+  function normTxt(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim(); }
+  function fullYr(t, now) {
+    var n = +t; if (t.length >= 3) return n;
+    var cur = (now || new Date()).getFullYear() % 100;
+    return n > cur ? 1900 + n : 2000 + n;
+  }
+  function validDate(y, m, d) {
+    if (!(y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31)) return "";
+    var dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCMonth() !== m - 1) return "";
+    return y + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  }
+  /** Qualquer data ("06/05/1986", "6-5-86", "06051986", "1986-05-06", "06 DE MAIO DE 1986") → "aaaa-mm-dd" ou "". */
+  function toIso(v, now) {
+    var s = normTxt(v == null ? "" : String(v)); if (!s) return "";
+    var m = /^(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})/.exec(s);
+    if (m) return validDate(+m[1], +m[2], +m[3]);
+    m = /^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2,4})$/.exec(s);
+    if (m) return validDate(fullYr(m[3], now), +m[2], +m[1]);
+    m = /^(\d{2})(\d{2})(\d{4})$/.exec(s);
+    if (m) return validDate(+m[3], +m[2], +m[1]);
+    m = /(\d{1,2})\s*(?:de\s+|[\/.\-]\s*)?([a-z]{3,})\.?\s*(?:de\s+|[\/.\-]\s*)?(\d{2,4})\b/.exec(s);
+    if (m && MESES[m[2].slice(0, 3)]) return validDate(fullYr(m[3], now), MESES[m[2].slice(0, 3)], +m[1]);
+    return "";
+  }
+  function dateBr(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; }
+  /** Data digitada na tela → atualiza p[key] e o aviso correspondente. */
+  function setDate(p, key, raw) {
+    var lbl = key === "birth" ? "Nascimento" : "Batismo", v = str(raw), iso = toIso(v);
+    p.dateIssues = (p.dateIssues || []).filter(function (x) { return x.indexOf(lbl) !== 0; });
+    if (!v) p[key] = ""; else if (iso) p[key] = iso;
+    else p.dateIssues.push(lbl + " não entendido: “" + v + "”. Corrija como dd/mm/aaaa.");
+    return p;
   }
 
   function splitName(full) {
@@ -71,6 +101,10 @@
       serviceYear: sy, months: [], notes: [],
       special: fm ? "fm" : sp ? "sp" : ""
     };
+    p.dateIssues = [];
+    [["birth", "900_2_Text_SanSerif", "Nascimento"], ["baptism", "900_5_Text_SanSerif", "Batismo"]].forEach(function (d) {
+      var raw = str(g(d[1])); if (raw && !p[d[0]]) p.dateIssues.push(d[2] + " não entendido: “" + raw + "”. Corrija como dd/mm/aaaa.");
+    });
     if (sp) p.notes.push("Marcado como pioneiro especial");
     if (fm) p.notes.push("Marcado como missionário em campo");
     for (var i = 0; i < 12; i++) {
@@ -102,7 +136,7 @@
     if (!p.baptism && p.status !== "Unbaptized Publisher") w.push("Sem data de batismo");
     if (!p.serviceYear || !p.months[0] || !p.months[0].month) w.push("Ano de serviço não reconhecido");
     if (p.appt && p.sex === "Female") w.push("Designação incompatível com sexo feminino");
-    return w.concat(p.notes || []);
+    return w.concat(p.dateIssues || [], p.notes || []);
   }
 
   function totals(list) {
@@ -368,6 +402,6 @@
     };
   }
 
-  var api = { MONTHS: MONTHS, STATUS: STATUS, toIso: toIso, splitName: splitName, serviceYearEnd: serviceYearEnd, monthIso: monthIso, hoursAllowed: hoursAllowed, setServiceYear: setServiceYear, fromFields: fromFields, warnings: warnings, totals: totals, toRows: toRows, toTswin: toTswin, groupPeople: groupPeople, excelSerial: excelSerial, toCircuit: toCircuit, COUNTRIES: COUNTRIES };
+  var api = { MONTHS: MONTHS, STATUS: STATUS, toIso: toIso, dateBr: dateBr, setDate: setDate, splitName: splitName, serviceYearEnd: serviceYearEnd, monthIso: monthIso, hoursAllowed: hoursAllowed, setServiceYear: setServiceYear, fromFields: fromFields, warnings: warnings, totals: totals, toRows: toRows, toTswin: toTswin, groupPeople: groupPeople, excelSerial: excelSerial, toCircuit: toCircuit, COUNTRIES: COUNTRIES };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.S21 = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

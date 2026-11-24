@@ -57,8 +57,8 @@
       '<label class="full">Nome do meio<input data-k="middlename" value="' + esc(p.middlename) + '"></label>' +
       '<label>Sexo' + sel("sex", p.sex, [["", "—"], ["Male", "Masculino"], ["Female", "Feminino"]]) + '</label>' +
       '<label>Designação' + sel("appt", p.appt, [["", "Nenhuma"], ["Elder", "Ancião"], ["MS", "Servo ministerial"]]) + '</label>' +
-      '<label>Nascimento<input type="date" data-k="birth" value="' + esc(p.birth) + '"></label>' +
-      '<label>Batismo<input type="date" data-k="baptism" value="' + esc(p.baptism) + '"></label>' +
+      '<label>Nascimento<input data-date="birth" inputmode="numeric" placeholder="dd/mm/aaaa" value="' + esc(S21.dateBr(p.birth)) + '"></label>' +
+      '<label>Batismo<input data-date="baptism" inputmode="numeric" placeholder="dd/mm/aaaa" value="' + esc(S21.dateBr(p.baptism)) + '"></label>' +
       '<label class="full">Ano de serviço<input data-k="serviceYear" value="' + esc(p.serviceYear) + '" placeholder="Ex.: 2026/2027"></label>' +
       '<label class="full">Situação' + sel("status", p.status, [["Baptized Publisher", "Publicador batizado"], ["Unbaptized Publisher", "Publicador não batizado"], ["Regular Pioneer", "Pioneiro regular"], ["Continuous Auxiliary Pioneer", "Pioneiro auxiliar contínuo"]]) + '</label>' +
       '</div><table class="months"><thead><tr><th>' + esc(p.serviceYear || "Mês") + '</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th>Obs.</th></tr></thead><tbody>' + rows + '</tbody></table>' +
@@ -96,6 +96,7 @@
   $("list").addEventListener("change", function (e) {
     var el = e.target, c = el.closest(".card"); if (!c) return;
     var p = list[Number(c.dataset.i)];
+    if (el.dataset.date) { S21.setDate(p, el.dataset.date, el.value); render(); return; }
     if (el.dataset.k === "serviceYear") { S21.setServiceYear(p, el.value); render(); return; }
     if (el.dataset.k) { p[el.dataset.k] = el.value; render(); return; }
     if (el.dataset.mk) {
