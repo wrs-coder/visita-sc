@@ -120,7 +120,7 @@
   var TILES = [
     { key: "elder", label: "Anciãos" },
     { key: "ms", label: "Servos ministeriais" },
-    { key: "bap", label: "Publicadores batizados" },
+    { key: "bap", label: "Publicadores batizados", hint: "inclui anciãos, servos e pioneiros" },
     { key: "unbap", label: "Publicadores não batizados" },
     { key: "newUnbap", label: "Novos publicadores não batizados" },
     { key: "aux", label: "Pioneiros auxiliares diferentes", list: true },

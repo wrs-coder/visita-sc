@@ -62,4 +62,4 @@
 - [x] Conversor S-21 em /ferramentas/S21_Export/ (sem código, edição antes de gerar, totais pioneiros/anciãos/servos)
 - [x] Conversor S-21: horas só para pioneiros/P.A., ano 2026/2027 = 2027, exportação TSWin (Active.xml)
 - [x] Conversor S-21: Circuit Manager (.json) e planilha Hourglass corrigida (meses, Regular, células vazias)
-- [ ] Analisador de congregações em /ferramentas/Analisador/ (grupos, pioneiros, resumo, listas, anotações, PDF, salvar/abrir)
+- [x] Analisador de congregações em /ferramentas/Analisador/ (grupos, pioneiros, resumo, listas, anotações, PDF, salvar/abrir)

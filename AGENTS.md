@@ -43,4 +43,4 @@
 - Phone-first: reads come from local copies (local-first-fetch.ts, mirror-tables.ts); network only on Sync, after writes or with no copy, always time-limited, so a hung connection never blocks screens.
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
 - Outline edit mode hides chrome; details in a dialog.
-- S-21 converter: public/ferramentas only, not in sw.js/APK.
+- S-21 tools: public/ferramentas only, not in sw.js/APK; Analisador reuses S21_Export/converter.js.

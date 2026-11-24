@@ -43,7 +43,7 @@
         p.id = uid("c"); p.area = area; state.cards.push(p); ok++;
       } catch (e) { bad.push(files[i].name); }
     }
-    if (ok) { touch(); openAreas[area] = true; }
+    if (ok) touch();
     var parts = [];
     if (bad.length) parts.push("Não lidos (sem campos preenchíveis): " + bad.join(", "));
     if (dup.length) parts.push("Já adicionados (mesma pessoa e mesmo ano): " + dup.join(", "));
@@ -134,7 +134,7 @@
     if (!state.cards.length) return;
     var r = analysis(state.scope);
     $("tiles").innerHTML = A.TILES.map(function (t) {
-      var inner = "<b>" + r.counts[t.key] + "</b><span>" + esc(t.label) + "</span>";
+      var inner = "<b>" + r.counts[t.key] + "</b><span>" + esc(t.label) + "</span>" + (t.hint ? "<small>" + esc(t.hint) + "</small>" : "");
       return t.list ? '<button class="tile" data-tile="' + t.key + '" aria-label="' + esc(t.label + ": " + r.counts[t.key] + ". Ver lista") + '">' + inner + "</button>" : '<div class="tile">' + inner + "</div>";
     }).join("");
   }
@@ -310,10 +310,11 @@
     scopes.forEach(function (s) { results[s.id] = s.id === "all" ? general : analysis(s.id); });
     text("Resumo", { size: 13, bold: true, gap: 6 });
     for (var i = 0; i < scopes.length; i += 5) {
-      var cols = scopes.slice(i, i + 5), labW = 200, colW = (W - 2 * M - labW) / cols.length;
+      var cols = scopes.slice(i, i + 5), labW = 180, colW = (W - 2 * M - labW) / cols.length;
       need(16 + A.TILES.length * 15);
-      cols.forEach(function (s, j) { page.drawText(fit(s.name, bold, 9, colW - 6), { x: M + labW + j * colW + 3, y: y - 9, size: 9, font: bold, color: ink }); });
-      y -= 14; rule();
+      var heads = cols.map(function (s) { return wrap(s.name, bold, 8.5, colW - 6).slice(0, 2); }), hl = Math.max.apply(null, heads.map(function (h) { return h.length; }));
+      heads.forEach(function (h, j) { h.forEach(function (l, n) { page.drawText(fit(l, bold, 8.5, colW - 6), { x: M + labW + j * colW + 3, y: y - 8.5 - n * 10, size: 8.5, font: bold, color: ink }); }); });
+      y -= 4 + hl * 10; rule();
       A.TILES.forEach(function (t) {
         page.drawText(fit(t.label, font, 9.5, labW - 6), { x: M, y: y - 9.5, size: 9.5, font: font, color: ink });
         cols.forEach(function (s, j) { page.drawText(String(results[s.id].counts[t.key]), { x: M + labW + j * colW + 3, y: y - 9.5, size: 9.5, font: bold, color: ink }); });
