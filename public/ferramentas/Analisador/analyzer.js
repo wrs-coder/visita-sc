@@ -332,12 +332,31 @@
     { key: "apptAux", label: "Anciãos e servos como P.A.", list: true },
     { key: "studies", label: "Dirigem estudos", list: true }
   ];
+  /** Resumo próprio da área dos pioneiros regulares. */
+  var RP_TILES = [
+    { key: "elderRp", label: "Anciãos – Pioneiros Regulares" },
+    { key: "msRp", label: "Servos ministeriais – Pioneiros Regulares" },
+    { key: "studies", label: "Dirigem estudos", list: true },
+    { key: "irregular", label: "Irregulares", list: true },
+    { key: "below", label: "Abaixo da média", hint: "atrás da meta anual de 600 h", list: true }
+  ];
+  /** Análise da área "rp": analyze + pioneiros abaixo da meta do ano de serviço. */
+  function analyzeRp(cards, opts, year) {
+    var r = analyze(cards, Object.assign({}, opts, { area: "rp" }));
+    var below = year ? pioneerYear(cards, year).list.filter(function (x) { return x.area === "rp" && x.diff < 0; }).map(function (x) {
+      return { id: x.id, name: x.name, area: x.area, detail: "Faltam " + (Math.round(-x.diff * 10) / 10) + " h · média " + x.avg + " h/mês" };
+    }) : [];
+    below.sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); });
+    r.lists.below = below;
+    r.counts.elderRp = r.counts.elder; r.counts.msRp = r.counts.ms; r.counts.below = below.length;
+    return r;
+  }
   var STUDY_RULES = [
     { key: "last", label: "Relatou estudos no último mês do período" },
     { key: "last3", label: "Relatou estudos nos 3 últimos meses seguidos" },
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml };
+  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

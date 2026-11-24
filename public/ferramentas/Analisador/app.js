@@ -5,7 +5,7 @@
   var seq = 0;
   function uid(prefix) { seq++; return prefix + Date.now().toString(36) + seq; }
 
-  var state = blank(), dirty = false, addTo = null, replaceId = null, openAreas = {};
+  var state = blank(), dirty = false, addTo = null, replaceId = null, openAreas = {}, openYear = {}, openPeople = {};
   function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, preset: "6m", active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", done: {}, cards: [] }; }
   function touch() { dirty = true; }
 
@@ -150,15 +150,30 @@
   function areaHtml(id, g) {
     var list = cardsOf(id).slice().sort(function (a, b) { return A.fullName(a).localeCompare(A.fullName(b), "pt") || String(a.serviceYear).localeCompare(String(b.serviceYear)); });
     var people = A.people(list).length, open = !!openAreas[id];
-    var count = list.length + (list.length === 1 ? " cartão" : " cartões") + (people !== list.length ? " · " + people + (people === 1 ? " pessoa" : " pessoas") : "");
+    var count = people + (people === 1 ? " pessoa" : " pessoas");
     return '<div class="area" data-a="' + id + '"><div class="areahead">' +
       (g ? '<input data-g="name" value="' + esc(g.name) + '" aria-label="Nome do grupo" placeholder="Nome do grupo">' +
         '<input data-g="overseer" value="' + esc(g.overseer) + '" aria-label="Superintendente do grupo" placeholder="Superintendente do grupo">' : "") +
       '<span class="count">' + count + "</span></div>" +
       '<div class="arow"><button class="soft" data-add>⬆ Importar S-21</button><button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
-      '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? list.map(cardHtml).join("") : "") + "</div>" +
+      '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? A.people(list).sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); }).map(personHtml).join("") : "") + "</div>" +
       doneHtml(id) +
       (g && state.groups.length > 1 ? '<button class="rmgroup" data-delgroup>Remover grupo</button>' : "") + "</div>";
+  }
+
+  // Uma pessoa = um item; os cartões de anos diferentes viram pílulas dentro dele.
+  function personHtml(h) {
+    var key = h.main.id, list = state.cards;
+    var cards = list.filter(function (p) { return p === h.main || Object.keys(h.months).some(function (k) { return h.months[k].p === p; }); });
+    cards = cards.filter(function (p, i) { return cards.indexOf(p) === i; }).sort(function (a, b) { return (A.cardYear(a) || 0) - (A.cardYear(b) || 0); });
+    if (cards.length < 2) return cardHtml(cards[0] || h.main);
+    var y = A.yearOfMonth(state.period.to);
+    var c = cards.filter(function (p) { return p.id === openYear[key]; })[0] || cards.filter(function (p) { return A.cardYear(p) === y; })[0] || cards[cards.length - 1];
+    var warn = cards.reduce(function (n, p) { return n + cardWarnings(p).length; }, 0);
+    return '<details class="card pgroup" data-pk="' + esc(key) + '"' + (openPeople[key] ? " open" : "") + '><summary><div><strong>' + esc(h.name) + '</strong><div class="sub">' + esc(cards.map(function (p) { return A.cardYear(p) || "?"; }).join(" · ")) + "</div></div>" +
+      '<span class="badge ' + (warn ? "warn" : "ok") + '">' + (warn ? "⚠ " + warn : "✓") + '</span></summary><div class="body">' +
+      '<div class="pillrow">' + cards.map(function (p) { return '<button class="pill" data-cyear="' + esc(p.id) + '" aria-pressed="' + (p === c) + '">Ano ' + (A.cardYear(p) || "?") + "</button>"; }).join("") + "</div>" +
+      cardHtml(c).replace('<details class="card"', '<details class="card inner" open') + "</div></details>";
   }
 
   function doneHtml(id) {
@@ -205,25 +220,31 @@
     var r = A.pioneerYear(state.cards, y);
     box.hidden = false;
     $("rpHead").textContent = "Ano de serviço " + y + " (set/" + (y - 1) + " a ago/" + y + ")" + (r.upTo ? " · até " + A.label(r.upTo) + ": meta " + hrs(50 * A.monthsBetween((y - 1) + "-09", r.upTo).length) : "");
+    var low = r.list.filter(function (x) { return x.diff < 0; }).length;
+    $("rpLow").textContent = low ? low + " ⚠" : "";
     $("rpList").innerHTML = r.list.length ? rpRows(r) : '<p class="muted">Nenhum pioneiro regular com cartão deste ano.</p>';
   }
 
   // ---------- resumo ----------
-  function analysis(scope) { return A.analyze(state.cards, { from: state.period.from, to: state.period.to, studyRule: state.studyRule, area: scope || "all" }); }
+  function tilesFor() { return state.active === "rp" ? A.RP_TILES : A.TILES; }
+  function analysis(scope) {
+    if ((scope || "all") === "rp") return A.analyzeRp(state.cards, { from: state.period.from, to: state.period.to, studyRule: state.studyRule }, rpYear());
+    return A.analyze(state.cards, { from: state.period.from, to: state.period.to, studyRule: state.studyRule, area: scope || "all" });
+  }
   function renderSummary() {
     $("summaryBox").hidden = !state.cards.length;
     $("sumTitle").textContent = "Resumo — " + (state.active === "all" ? "Geral (toda a congregação)" : areaName(state.active));
     $("rule").innerHTML = A.STUDY_RULES.map(function (r) { return '<option value="' + r.key + '"' + (r.key === state.studyRule ? " selected" : "") + ">" + esc(r.label) + "</option>"; }).join("");
     if (!state.cards.length) return;
     var r = analysis(state.active);
-    $("tiles").innerHTML = A.TILES.map(function (t) {
+    $("tiles").innerHTML = tilesFor().map(function (t) {
       var inner = "<b>" + r.counts[t.key] + "</b><span>" + esc(t.label) + "</span>" + (t.hint ? "<small>" + esc(t.hint) + "</small>" : "");
       return t.list ? '<button class="tile" data-tile="' + t.key + '" aria-label="' + esc(t.label + ": " + r.counts[t.key] + ". Ver lista") + '">' + inner + "</button>" : '<div class="tile">' + inner + "</div>";
     }).join("");
   }
   function periodLabel() { return state.period.from ? A.label(state.period.from) + " a " + A.label(state.period.to) : ""; }
   function openList(key) {
-    var t = A.TILES.filter(function (x) { return x.key === key; })[0], r = analysis(state.active), items = r.lists[key] || [];
+    var t = tilesFor().filter(function (x) { return x.key === key; })[0], r = analysis(state.active), items = r.lists[key] || [];
     $("sheetTitle").textContent = t.label + " · " + (state.active === "all" ? "Geral" : areaName(state.active)) + " · " + periodLabel();
     $("sheetBody").innerHTML = items.length ? items.map(function (i) {
       return '<button class="item tap" data-person="' + esc(i.id) + '"><strong>' + esc(i.name) + "</strong><small>" + esc(areaName(i.area)) + "</small><p>" + esc(i.detail) + "</p></button>";
@@ -362,7 +383,7 @@
     var tabs = [{ id: "all", name: "Geral" }].concat(areas());
     if (!tabs.some(function (t) { return t.id === state.active; })) state.active = "all";
     $("tabs").innerHTML = tabs.map(function (t) {
-      var n = t.id === "all" ? state.cards.length : cardsOf(t.id).length;
+      var n = A.people(t.id === "all" ? state.cards : cardsOf(t.id)).length;
       return '<button class="pill" role="tab" data-tab="' + t.id + '" aria-selected="' + (t.id === state.active) + '">' + (state.done[t.id] ? '<i class="done" aria-label="analisado">✓</i>' : "") + esc(t.id === "rp" ? "Pioneiros reg." : t.name) + "<small>" + n + "</small></button>";
     }).join("") + '<button class="pill add" data-addgroup>+ Grupo</button>';
   }
@@ -415,6 +436,9 @@
     touch();
   });
 
+  try { $("rpBox").open = localStorage.getItem("analisador.rpOpen") !== "0"; } catch (e) { $("rpBox").open = true; }
+  $("rpBox").addEventListener("toggle", function () { try { localStorage.setItem("analisador.rpOpen", $("rpBox").open ? "1" : "0"); } catch (e) {} });
+
   function areaOf(el) { var a = el.closest(".area"); return a && a.dataset.a; }
   function onAreas(e) {
     var el = e.target, id = areaOf(el); if (!id) return;
@@ -430,6 +454,10 @@
         state.cards = state.cards.filter(function (p) { return p.area !== id; });
         state.active = "all"; touch(); fixPeriod(); render(); return;
       }
+      var cy = el.closest("[data-cyear]");
+      if (cy) { var pk = el.closest("[data-pk]").dataset.pk; openYear[pk] = cy.dataset.cyear; openPeople[pk] = true; render(); return; }
+      var sm = el.closest(".pgroup > summary");
+      if (sm) { var pk2 = sm.parentNode.dataset.pk; openPeople[pk2] = !sm.parentNode.open; return; }
       if (el.closest("[data-replace]")) { replaceId = el.closest(".card").dataset.id; $("pdfOne").click(); return; }
       if (el.matches("[data-rm]")) {
         var c = el.closest(".card");
@@ -491,12 +519,12 @@
       });
       var yr = d.year ? Number(d.year) : A.yearOfMonth(d.period && d.period.to);
       state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, preset: d.preset || (d.period && d.period.from ? "custom" : "6m"), active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), done: d.done && typeof d.done === "object" ? d.done : {}, cards: cards };
-      openAreas = {}; dirty = false; fixPeriod(); say(""); render();
+      openAreas = {}, openYear = {}, openPeople = {}; dirty = false; fixPeriod(); say(""); render();
     } catch (err) { say("Este arquivo não é uma análise salva pelo Analisador de congregações."); }
   });
   $("clear").addEventListener("click", function () {
     if (!confirm("Limpar grupos, cartões e anotações?")) return;
-    state = blank(); openAreas = {}; dirty = false; say(""); render();
+    state = blank(); openAreas = {}, openYear = {}, openPeople = {}; dirty = false; say(""); render();
   });
   window.addEventListener("beforeunload", function (e) { if (dirty && state.cards.length) { e.preventDefault(); e.returnValue = ""; } });
 
