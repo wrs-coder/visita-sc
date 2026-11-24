@@ -368,6 +368,6 @@
     };
   }
 
-  var api = { MONTHS: MONTHS, STATUS: STATUS, toIso: toIso, splitName: splitName, serviceYearEnd: serviceYearEnd, monthIso: monthIso, hoursAllowed: hoursAllowed, setServiceYear: setServiceYear, fromFields: fromFields, warnings: warnings, totals: totals, toRows: toRows, toTswin: toTswin, excelSerial: excelSerial, toCircuit: toCircuit, COUNTRIES: COUNTRIES };
+  var api = { MONTHS: MONTHS, STATUS: STATUS, toIso: toIso, splitName: splitName, serviceYearEnd: serviceYearEnd, monthIso: monthIso, hoursAllowed: hoursAllowed, setServiceYear: setServiceYear, fromFields: fromFields, warnings: warnings, totals: totals, toRows: toRows, toTswin: toTswin, groupPeople: groupPeople, excelSerial: excelSerial, toCircuit: toCircuit, COUNTRIES: COUNTRIES };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.S21 = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

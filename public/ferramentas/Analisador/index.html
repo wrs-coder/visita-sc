@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Analisador de congregações</title>
+<meta name="description" content="Analisa os cartões S-21 por grupo de campo para o superintendente de circuito, direto no aparelho.">
+<link rel="stylesheet" href="/ferramentas/S21_Export/style.css">
+<link rel="stylesheet" href="/ferramentas/Analisador/style.css">
+</head>
+<body>
+<header class="top"><h1>Analisador de congregações</h1><p>Os cartões são lidos só neste aparelho. Nada é enviado pela internet.</p></header>
+<main>
+  <section class="box">
+    <div class="grid two">
+      <label class="full">Congregação<input id="cong" autocomplete="off" placeholder="Ex.: Central"></label>
+      <label>De<select id="from" aria-label="Primeiro mês do período"></select></label>
+      <label>Até<select id="to" aria-label="Último mês do período"></select></label>
+    </div>
+    <p class="muted small" id="periodInfo"></p>
+  </section>
+
+  <p class="msg" id="msg" role="status" hidden></p>
+
+  <div class="sechead"><h2>Grupos de campo</h2><button class="link" id="addGroup">+ Grupo</button></div>
+  <div id="groups"></div>
+
+  <div class="sechead"><h2>Pioneiros regulares</h2></div>
+  <div id="pioneers"></div>
+
+  <section id="summaryBox" hidden>
+    <div class="sechead"><h2>Resumo</h2><select id="scope" class="scope" aria-label="Resumo de"></select></div>
+    <div class="tiles" id="tiles"></div>
+    <label class="rule">Quem conta como “Dirige estudos”<select id="rule"></select></label>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>Anotações do superintendente</h2></div>
+    <div class="box" id="notes"></div>
+  </section>
+
+  <section class="actions">
+    <button class="primary dl" id="pdf"><b>⬇ Relatório <span>PDF</span></b><small>Resumo, listas e anotações</small></button>
+    <button class="primary dl" id="save"><b>Salvar análise <span>.json</span></b><small>Arquivo para reabrir depois, neste ou em outro aparelho</small></button>
+    <button class="ghost" id="open">Abrir análise salva</button>
+    <button class="ghost danger" id="clear">Limpar tudo</button>
+  </section>
+
+  <input type="file" id="pdfs" accept="application/pdf,.pdf" multiple hidden>
+  <input type="file" id="openFile" accept="application/json,.json" hidden>
+</main>
+
+<dialog id="sheet" aria-labelledby="sheetTitle">
+  <div class="sheethead"><button class="x" id="sheetClose" aria-label="Fechar">✕</button><h3 id="sheetTitle"></h3></div>
+  <div id="sheetBody" class="sheetbody"></div>
+</dialog>
+
+<script src="/ferramentas/S21_Export/pdf-lib.min.js"></script>
+<script src="/ferramentas/S21_Export/converter.js"></script>
+<script src="/ferramentas/Analisador/analyzer.js"></script>
+<script src="/ferramentas/Analisador/app.js"></script>
+</body>
+</html>
