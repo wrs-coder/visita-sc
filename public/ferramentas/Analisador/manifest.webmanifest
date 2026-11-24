@@ -8,7 +8,19 @@
   "background_color": "#f2f2f7",
   "theme_color": "#2a5c9e",
   "icons": [
-    { "src": "/ferramentas/Analisador/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/ferramentas/Analisador/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
+    {
+      "src": "/ferramentas/Analisador/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/ferramentas/Analisador/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
 }

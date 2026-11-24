@@ -16,6 +16,7 @@
 </head>
 <body>
 <header class="top"><h1>Analisador de congregações</h1><p>Os cartões são lidos só neste aparelho. Nada é enviado pela internet.</p></header>
+<button id="installBtn" class="installbtn" type="button" hidden>📲 Instalar Analisador no computador</button>
 <main>
   <section class="box">
     <label class="full">Congregação<input id="cong" autocomplete="off" placeholder="Ex.: Central"></label>
@@ -90,6 +91,13 @@
   if(!/\/$/.test(location.pathname)) return;
   window.addEventListener("load",function(){navigator.serviceWorker.register(SW,{scope:"/ferramentas/Analisador/"}).catch(function(){});});
 })();
+</script>
+<script>
+(function(){var ev=null,b=document.getElementById("installBtn");if(!b)return;
+if(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)return;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();ev=e;b.hidden=false;});
+b.addEventListener("click",function(){if(!ev)return;ev.prompt();ev.userChoice.finally(function(){ev=null;b.hidden=true;});});
+window.addEventListener("appinstalled",function(){b.hidden=true;});})();
 </script>
 </body>
 </html>

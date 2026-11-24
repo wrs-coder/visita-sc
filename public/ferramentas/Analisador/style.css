@@ -110,3 +110,6 @@ table.view tr.out td{opacity:.5}
 .lowm small{color:var(--warn);font-weight:600}.lowm p{margin:2px 0 0;font-size:13px}
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;border-bottom:1px solid var(--line)}
 .chk input{width:22px;height:22px}
+
+.installbtn{display:block;margin:10px auto 0;padding:12px 18px;border:0;border-radius:14px;background:#2a5c9e;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.installbtn[hidden]{display:none}
