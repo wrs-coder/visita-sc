@@ -92,3 +92,6 @@ table.view tr.out td{opacity:.5}
 .pgroup > .body > .pillrow { margin-bottom: 8px; }
 .card.inner { border: 0; box-shadow: none; margin: 0; padding: 0; }
 .card.inner > summary { display: none; }
+.pboth { display: grid; gap: 12px; }
+.pyear { font-weight: 600; margin: 4px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); opacity: .85; }
+@media (min-width: 800px) { .pboth { grid-template-columns: 1fr 1fr; } }

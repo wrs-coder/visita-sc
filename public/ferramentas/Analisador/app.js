@@ -167,13 +167,16 @@
     var cards = list.filter(function (p) { return p === h.main || Object.keys(h.months).some(function (k) { return h.months[k].p === p; }); });
     cards = cards.filter(function (p, i) { return cards.indexOf(p) === i; }).sort(function (a, b) { return (A.cardYear(a) || 0) - (A.cardYear(b) || 0); });
     if (cards.length < 2) return cardHtml(cards[0] || h.main);
-    var y = A.yearOfMonth(state.period.to);
-    var c = cards.filter(function (p) { return p.id === openYear[key]; })[0] || cards.filter(function (p) { return A.cardYear(p) === y; })[0] || cards[cards.length - 1];
+    var both = !openYear[key] || openYear[key] === "both";
+    var c = both ? null : cards.filter(function (p) { return p.id === openYear[key]; })[0];
+    if (!both && !c) both = true;
     var warn = cards.reduce(function (n, p) { return n + cardWarnings(p).length; }, 0);
+    var inner = function (p) { return '<div class="pcard"><p class="pyear">Cartão Ano ' + (A.cardYear(p) || "?") + "</p>" + cardHtml(p).replace('<details class="card"', '<details class="card inner" open') + "</div>"; };
     return '<details class="card pgroup" data-pk="' + esc(key) + '"' + (openPeople[key] ? " open" : "") + '><summary><div><strong>' + esc(h.name) + '</strong><div class="sub">' + esc(cards.map(function (p) { return A.cardYear(p) || "?"; }).join(" · ")) + "</div></div>" +
       '<span class="badge ' + (warn ? "warn" : "ok") + '">' + (warn ? "⚠ " + warn : "✓") + '</span></summary><div class="body">' +
-      '<div class="pillrow">' + cards.map(function (p) { return '<button class="pill" data-cyear="' + esc(p.id) + '" aria-pressed="' + (p === c) + '">Ano ' + (A.cardYear(p) || "?") + "</button>"; }).join("") + "</div>" +
-      cardHtml(c).replace('<details class="card"', '<details class="card inner" open') + "</div></details>";
+      '<div class="pillrow">' + cards.map(function (p) { return '<button class="pill" data-cyear="' + esc(p.id) + '" aria-pressed="' + (p === c) + '">Ano ' + (A.cardYear(p) || "?") + "</button>"; }).join("") +
+      '<button class="pill" data-cyear="both" aria-pressed="' + both + '">Ambos</button></div>' +
+      '<div class="pboth">' + (both ? cards : [c]).map(inner).join("") + "</div></div></details>";
   }
 
   function doneHtml(id) {
