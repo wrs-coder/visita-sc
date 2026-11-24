@@ -187,6 +187,6 @@
     XLSX.utils.book_append_sheet(wb, r, "reports");
     XLSX.utils.book_append_sheet(wb, v, "validation");
     wb.Workbook = { Sheets: [{ Hidden: 0 }, { Hidden: 0 }, { Hidden: 1 }] }; // validation oculta, como no modelo
-    XLSX.writeFile(wb, "hourglass-import.xlsx");
+    XLSX.writeFile(wb, "hourglass-import.xlsx", { bookSST: true }); // textos em sharedStrings, como o Excel grava
   });
 })();
