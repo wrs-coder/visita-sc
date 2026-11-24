@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 type Month = { month: string; participated: boolean; studies: number | null; auxiliary: boolean; hours: number | null; comments: string };
 type Pub = Record<string, unknown> & { status: string; months: Month[] };
-const loaded = createRequire(import.meta.url)("../../public/ferramentas/S21_Export/converter.js") as unknown;
+const loaded = createRequire(import.meta.url)("../public/ferramentas/S21_Export/converter.js") as unknown;
 const S21 = ((loaded && typeof loaded === "object" && "toTswin" in loaded ? loaded : (globalThis as Record<string, unknown>)["S21"]) as {
   serviceYearEnd: (v: string) => number | null;
   monthIso: (sy: string, i: number) => string;

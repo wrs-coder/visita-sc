@@ -9,9 +9,9 @@ type Result = { months: string[]; counts: Record<string, number>; lists: Record<
 
 const req = createRequire(import.meta.url);
 const g = globalThis as Record<string, unknown>;
-const conv = req("../../public/ferramentas/S21_Export/converter.js") as Record<string, unknown>;
+const conv = req("../public/ferramentas/S21_Export/converter.js") as Record<string, unknown>;
 if (conv && "groupPeople" in conv) g["S21"] = conv;
-const an = req("../../public/ferramentas/Analisador/analyzer.js") as Record<string, unknown>;
+const an = req("../public/ferramentas/Analisador/analyzer.js") as Record<string, unknown>;
 const A = (an && "analyze" in an ? an : g["Analisador"]) as {
   analyze: (c: Card[], o: { from: string; to: string; studyRule?: string; area?: string }) => Result;
   defaultPeriod: (c: Card[]) => { from: string; to: string };

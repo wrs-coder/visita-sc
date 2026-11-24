@@ -49,8 +49,7 @@ import { Route as CadastroIndexRouteImport } from './routes/cadastro.index'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
-import { Route as FerramentasAnalisadorRouteImport } from './routes/ferramentas.Analisador'
-import { Route as FerramentasS21_ExportRouteImport } from './routes/ferramentas.S21_Export'
+import { Route as FerramentasFerramentaRouteImport } from './routes/ferramentas.$ferramenta'
 import { Route as RelogioCodeRouteImport } from './routes/relogio.$code'
 import { Route as VisitanteIndexRouteImport } from './routes/visitante.index'
 import { Route as VisitantePainelRouteImport } from './routes/visitante.painel'
@@ -260,14 +259,9 @@ const ConfirmarTokenRoute = ConfirmarTokenRouteImport.update({
   path: '/confirmar/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FerramentasAnalisadorRoute = FerramentasAnalisadorRouteImport.update({
-  id: '/ferramentas/Analisador',
-  path: '/ferramentas/Analisador',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FerramentasS21_ExportRoute = FerramentasS21_ExportRouteImport.update({
-  id: '/ferramentas/S21_Export',
-  path: '/ferramentas/S21_Export',
+const FerramentasFerramentaRoute = FerramentasFerramentaRouteImport.update({
+  id: '/ferramentas/$ferramenta',
+  path: '/ferramentas/$ferramenta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RelogioCodeRoute = RelogioCodeRouteImport.update({
@@ -340,8 +334,7 @@ export interface FileRoutesByFullPath {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
-  '/ferramentas/Analisador': typeof FerramentasAnalisadorRoute
-  '/ferramentas/S21_Export': typeof FerramentasS21_ExportRoute
+  '/ferramentas/$ferramenta': typeof FerramentasFerramentaRoute
   '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro/': typeof CadastroIndexRoute
@@ -388,8 +381,7 @@ export interface FileRoutesByTo {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
-  '/ferramentas/Analisador': typeof FerramentasAnalisadorRoute
-  '/ferramentas/S21_Export': typeof FerramentasS21_ExportRoute
+  '/ferramentas/$ferramenta': typeof FerramentasFerramentaRoute
   '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro': typeof CadastroIndexRoute
@@ -439,8 +431,7 @@ export interface FileRoutesById {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
-  '/ferramentas/Analisador': typeof FerramentasAnalisadorRoute
-  '/ferramentas/S21_Export': typeof FerramentasS21_ExportRoute
+  '/ferramentas/$ferramenta': typeof FerramentasFerramentaRoute
   '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
   '/cadastro/': typeof CadastroIndexRoute
@@ -490,8 +481,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
-    | '/ferramentas/Analisador'
-    | '/ferramentas/S21_Export'
+    | '/ferramentas/$ferramenta'
     | '/relogio/$code'
     | '/visitante/painel'
     | '/cadastro/'
@@ -538,8 +528,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
-    | '/ferramentas/Analisador'
-    | '/ferramentas/S21_Export'
+    | '/ferramentas/$ferramenta'
     | '/relogio/$code'
     | '/visitante/painel'
     | '/cadastro'
@@ -588,8 +577,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
-    | '/ferramentas/Analisador'
-    | '/ferramentas/S21_Export'
+    | '/ferramentas/$ferramenta'
     | '/relogio/$code'
     | '/visitante/painel'
     | '/cadastro/'
@@ -612,8 +600,7 @@ export interface RootRouteChildren {
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
-  FerramentasAnalisadorRoute: typeof FerramentasAnalisadorRoute
-  FerramentasS21_ExportRoute: typeof FerramentasS21_ExportRoute
+  FerramentasFerramentaRoute: typeof FerramentasFerramentaRoute
   RelogioCodeRoute: typeof RelogioCodeRoute
   CadastroIndexRoute: typeof CadastroIndexRoute
   ApiPublicPingRoute: typeof ApiPublicPingRoute
@@ -902,18 +889,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmarTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ferramentas/Analisador': {
-      id: '/ferramentas/Analisador'
-      path: '/ferramentas/Analisador'
-      fullPath: '/ferramentas/Analisador'
-      preLoaderRoute: typeof FerramentasAnalisadorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ferramentas/S21_Export': {
-      id: '/ferramentas/S21_Export'
-      path: '/ferramentas/S21_Export'
-      fullPath: '/ferramentas/S21_Export'
-      preLoaderRoute: typeof FerramentasS21_ExportRouteImport
+    '/ferramentas/$ferramenta': {
+      id: '/ferramentas/$ferramenta'
+      path: '/ferramentas/$ferramenta'
+      fullPath: '/ferramentas/$ferramenta'
+      preLoaderRoute: typeof FerramentasFerramentaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/relogio/$code': {
@@ -1052,8 +1032,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
-  FerramentasAnalisadorRoute: FerramentasAnalisadorRoute,
-  FerramentasS21_ExportRoute: FerramentasS21_ExportRoute,
+  FerramentasFerramentaRoute: FerramentasFerramentaRoute,
   RelogioCodeRoute: RelogioCodeRoute,
   CadastroIndexRoute: CadastroIndexRoute,
   ApiPublicPingRoute: ApiPublicPingRoute,
