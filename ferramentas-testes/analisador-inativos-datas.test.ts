@@ -58,9 +58,9 @@ describe("Analisador — inativos", () => {
     const c = card("Caio Tres", [...Array(9).fill(true), false, false, false] as boolean[]);
     expect(A.inactiveMap([base, c])[c.id!]!.risk).toBe(false);
   });
-  it("palavra inativo no cartão = inativo", () => {
+  it("palavra inativo sozinha não torna inativo (regra dos 6 meses decide)", () => {
     const c = card("Davi Obs", all, { comments: ["", "Inativo desde 2024"] });
-    expect(A.inactiveMap([c])[c.id!]!.inactive).toBe(true);
+    expect(A.inactiveMap([c])[c.id!]!.inactive).toBe(false);
   });
   it("pasta Inativos vira grupo de inativos", () => {
     const gs = A.folderGroups([{ path: "Cong/Inativos/a.pdf" }, { path: "Cong/Grupo 1/b.pdf" }]);

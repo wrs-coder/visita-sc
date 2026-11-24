@@ -360,18 +360,20 @@
     return normName(parts.filter(Boolean).join(" "));
   }
   /**
-   * Situação de cada pessoa: inativo (palavra "inativo" no cartão ou 6+ meses seguidos sem pregar)
-   * ou em perigo (4 ou 5 meses seguidos). Contagem termina no último mês com relatório (ou upTo).
-   * Retorna { idDoCartão: { inactive, risk, streak, reason } } para todos os cartões da pessoa.
+   * Situação de cada pessoa. Inativo = 6+ meses seguidos sem pregar terminando no último mês
+   * do período (upTo). Pregou nesse mês → nunca inativo. A palavra "inativo" só gera aviso (flagNote).
+   * overrides[normName] = true → "Não está inativo" (escolha manual).
+   * Retorna { idDoCartão: { inactive, risk, streak, reason, flagNote, manual, key } }.
    */
-  function inactiveMap(cards, upTo) {
-    var rep = reportedMonths(cards), last = upTo || rep[rep.length - 1], out = {};
+  function inactiveMap(cards, upTo, overrides) {
+    var rep = reportedMonths(cards), last = upTo || rep[rep.length - 1], out = {}, ov = overrides || {};
     people(cards).forEach(function (h) {
+      var key = normName(h.name);
       var flag = h.cards.some(function (p) { return INATIVO.test(cardText(p)); });
       var streak = 0;
       if (last) for (var k = last; h.months[k] && !shared(h.months[k].m) && !(h.firstShared && k < h.firstShared); k = addMonths(k, -1)) streak++;
-      var inactive = flag || streak >= 6;
-      var info = { inactive: inactive, risk: !inactive && streak >= 4, streak: streak, reason: flag ? "palavra “inativo” no cartão" : streak >= 6 ? streak + " meses seguidos sem pregar" : "" };
+      var manual = !!ov[key], auto = streak >= 6, inactive = auto && !manual;
+      var info = { inactive: inactive, auto: auto, manual: manual, key: key, risk: !auto && streak >= 4, streak: streak, reason: auto ? streak + " meses seguidos sem pregar" : "", flagNote: flag && !auto ? "Cartão diz “inativo”, mas a regra dos 6 meses não confirma" : "" };
       h.cards.forEach(function (p) { if (p.id != null) out[p.id] = info; });
     });
     return out;

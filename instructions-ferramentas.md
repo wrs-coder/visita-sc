@@ -51,8 +51,8 @@ Este arquivo vale só para as ferramentas do site. O aplicativo VisitaSC segue o
   - Tocar num nome abre o cartão mês a mês.
 
 ### Analisador — regras combinadas (24/11/2026)
-- Inativo: palavra "inativo" em qualquer parte do cartão (ou pasta "Inativos") ou 6+ meses seguidos sem pregar até o último mês com relatório. Fica no grupo "Inativos", fora dos grupos de campo, e volta ao grupo de origem ao recalcular.
-- Perigo de ficar inativo: 4 ou 5 meses seguidos sem pregar (alerta, continua no grupo).
+- Inativo: só quem está 6+ meses seguidos sem pregar terminando no último mês do período analisado. Pregou ("Part.") nesse mês → nunca inativo. A palavra "inativo" (ou pasta "Inativos") só gera aviso no cartão. No cartão da pessoa há a opção manual "Não está inativo" (salva com a análise). Fica no grupo "Inativos", fora dos grupos de campo, e volta ao grupo de origem ao recalcular.
+- Perigo de ficar inativo: 4 ou 5 meses seguidos sem pregar até o último mês do período (alerta, continua no grupo).
 - Datas de qualquer formato (inclusive por extenso) viram dd/mm/aaaa; data não entendida vira aviso.
 - Resumos só mudam ao tocar "Aplicar mudanças" ou "Recalcular dados". Tudo fica guardado no aparelho; só "Limpar tudo" apaga.
 - Meta dos pioneiros mostra os meses abaixo de 50 h com horas e observação.
