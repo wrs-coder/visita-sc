@@ -55,3 +55,10 @@ Regra: "2025/2026" = ano de serviço **2026** (set/2025 a ago/2026); "2026/2027"
 - Arquivo salvo: mesmo formato (version 1), `period` antigo convertido para o ano de serviço.
 - Testes em `src/lib/congregation-analyzer.test.ts`: "2025/2026"→set/2025–ago/2026; "26/7"→2027; pioneiro regular fora do resumo dos grupos; reimportação substitui sem duplicar.
 - Conferir com Playwright em 393×687 que nenhum botão sai da tela.
+
+## Sugestões extras (opcionais — diga quais quer)
+1. **Arrastar vários PDFs de uma vez para a congregação toda**: o app lê o "Grupo" escrito no cartão (quando houver) e já coloca cada um no grupo certo; você só confere.
+2. **Fila "Precisa de atenção"** no topo: cartões com ano não lido, nome vazio ou PDF escaneado, com o botão ⟳ ao lado — resolve tudo num lugar.
+3. **Comparar com o ano anterior** em cada número do resumo (ex.: "Irregulares 3 ▼1").
+4. **Salvar automático no aparelho** (além do arquivo .json), para não perder a análise se fechar a página.
+5. **Toque no nome na lista** abre o cartão da pessoa mês a mês, para conferir sem abrir o PDF.
