@@ -95,3 +95,18 @@ table.view tr.out td{opacity:.5}
 .pboth { display: grid; gap: 12px; }
 .pyear { font-weight: 600; margin: 4px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); opacity: .85; }
 @media (min-width: 800px) { .pboth { grid-template-columns: 1fr 1fr; } }
+
+/* Aplicar mudanças, inativos, PDF */
+.recalcrow{margin-top:12px}.recalcrow .soft{width:100%}
+.pendbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;border-radius:12px;background:var(--bg);font-size:14px;color:var(--warn);font-weight:600}
+.pendbar button{min-height:44px}
+.markrp{width:100%;margin-top:8px}
+.warnbar{color:var(--warn)}
+.risk{border:1px solid var(--warn);border-radius:12px;padding:8px 12px;margin-top:10px}
+.risk>strong{color:var(--warn);font-size:14px}
+.divider{margin:14px 2px 4px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px}
+.tabs .inpill{border-style:dashed;color:var(--muted)}
+.lowm{margin-top:6px;padding:6px 10px;border-radius:10px;background:var(--bg)}
+.lowm small{color:var(--warn);font-weight:600}.lowm p{margin:2px 0 0;font-size:13px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;border-bottom:1px solid var(--line)}
+.chk input{width:22px;height:22px}

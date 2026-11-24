@@ -7,15 +7,25 @@
 
   var state = blank(), dirty = false, addTo = null, replaceId = null, openAreas = {}, openYear = {}, openPeople = {};
   function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, preset: "6m", active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", done: {}, cards: [] }; }
-  function touch() { dirty = true; }
+  var INFO = {}, view = [], pend = {};
+  function touch() { dirty = true; scheduleSave(); }
+  function effArea(p) { var i = INFO[p.id]; return i && i.inactive ? "in" : p.area; }
+  /** Recalcula: situação (inativos) e cópia usada nos resumos, totais e meta. Só aqui os números mudam. */
+  function recalc() {
+    INFO = A.inactiveMap(state.cards);
+    view = JSON.parse(JSON.stringify(state.cards)).map(function (p) { p.area = effArea(p); return p; });
+    pend = {};
+  }
 
   function areaName(id) {
     if (id === "rp") return "Pioneiros regulares";
+    if (id === "in") return "Inativos";
     var g = state.groups.filter(function (x) { return x.id === id; })[0];
     return g ? (g.name || "Grupo sem nome") : "";
   }
-  function areas() { return A.sortGroups(state.groups).map(function (g) { return { id: g.id, name: g.name || "Grupo sem nome" }; }).concat([{ id: "rp", name: "Pioneiros regulares" }]); }
-  function cardsOf(id) { return state.cards.filter(function (p) { return p.area === id; }); }
+  function areas() { return A.sortGroups(state.groups).map(function (g) { return { id: g.id, name: g.name || "Grupo sem nome" }; }).concat([{ id: "rp", name: "Pioneiros regulares" }]).concat(state.cards.some(function (p) { return effArea(p) === "in"; }) || state.active === "in" ? [{ id: "in", name: "Inativos" }] : []); }
+  function homeAreas() { return areas().filter(function (a) { return a.id !== "in"; }); }
+  function cardsOf(id) { return state.cards.filter(function (p) { return effArea(p) === id; }); }
   function say(text) { $("msg").textContent = text || ""; $("msg").hidden = !text; }
 
   // ---------- leitura dos PDFs (mesma do Conversor S-21) ----------
@@ -30,7 +40,19 @@
       } catch (e) {}
     });
     if (!("900_1_Text_SanSerif" in fields)) throw new Error("sem campos");
-    return S.fromFields(fields, file.name);
+    return fixDates(S.fromFields(fields, file.name), fields);
+  }
+  /** Datas em qualquer formato (inclusive por extenso) → aaaa-mm-dd; o que não for entendido vira aviso. */
+  function fixDates(p, fields) {
+    p.dateIssues = [];
+    [["birth", "900_2_Text_SanSerif", "Nascimento"], ["baptism", "900_5_Text_SanSerif", "Batismo"]].forEach(function (d) {
+      var raw = String(fields[d[1]] == null ? "" : fields[d[1]]).trim();
+      if (!raw) return;
+      var v = A.parseDateAny(raw);
+      if (v) p[d[0]] = v; else p.dateIssues.push(d[2] + " não entendido: “" + raw + "”. Corrija como dd/mm/aaaa.");
+    });
+    if (p.baptism && p.status === "Unbaptized Publisher") p.status = "Baptized Publisher";
+    return p;
   }
   function cardKey(p) { return [A.fullName(p).toLowerCase(), p.birth || "", S.serviceYearEnd(p.serviceYear) || p.serviceYear].join("|"); }
 
@@ -40,11 +62,12 @@
     if (old) { p.id = old.id; p.area = old.area; state.cards[state.cards.indexOf(old)] = p; return "upd"; }
     p.id = uid("c"); p.area = area; state.cards.push(p); return "ok";
   }
-  async function readInto(files, area) {
+  async function readInto(files, area, inactive) {
     var bad = [], upd = 0, ok = 0;
     for (var i = 0; i < files.length; i++) {
       try {
-        if (placeCard(await readPdf(files[i]), area) === "upd") upd++; else ok++;
+        var rd = await readPdf(files[i]); if (inactive) rd.inactiveFlag = true;
+        if (placeCard(rd, area) === "upd") upd++; else ok++;
       } catch (e) { bad.push(files[i].name); }
     }
     return { bad: bad, upd: upd, ok: ok };
@@ -65,7 +88,7 @@
     if (bad.length) parts.push("Não lidos (sem campos preenchíveis): " + bad.join(", "));
     if (upd || ok) parts.unshift((ok ? ok + (ok === 1 ? " novo" : " novos") : "") + (ok && upd ? ", " : "") + (upd ? upd + (upd === 1 ? " atualizado" : " atualizados") : ""));
     say(parts.join(" · "));
-    fixPeriod(); render();
+    recalc(); fixPeriod(); render();
   }
   async function replaceCard(id, file) {
     var old = state.cards.filter(function (q) { return q.id === id; })[0]; if (!old) return;
@@ -73,7 +96,7 @@
       var p = await readPdf(file); p.id = old.id; p.area = old.area;
       state.cards[state.cards.indexOf(old)] = p; touch(); say("Cartão atualizado: " + A.fullName(p));
     } catch (e) { say("Não lido (sem campos preenchíveis): " + file.name); }
-    fixPeriod(); render();
+    recalc(); fixPeriod(); render();
   }
 
   // ---------- período ----------
@@ -101,7 +124,7 @@
     var opts = function (sel) { return all.map(function (k) { return '<option value="' + k + '"' + (k === sel ? " selected" : "") + ">" + A.label(k) + "</option>"; }).join(""); };
     $("pFrom").innerHTML = opts(state.period.from); $("pTo").innerHTML = opts(state.period.to);
     var n = A.monthsBetween(state.period.from, state.period.to).length;
-    var live = A.analyze(state.cards, { from: state.period.from, to: state.period.to }).months.length;
+    var live = A.analyze(view, { from: state.period.from, to: state.period.to }).months.length;
     var yrs = A.periodYears(state.period.from, state.period.to).map(function (y) { return (y - 1) + "/" + y; });
     $("periodInfo").textContent = periodLabel() + " · " + n + (n === 1 ? " mês" : " meses") + " (" + live + " com relatório) · Usa cartões " + yrs.join(" e ") + ".";
   }
@@ -111,7 +134,9 @@
     return '<select data-k="' + key + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === val ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select>";
   }
   function cardWarnings(p) {
-    var w = S.warnings(p).slice();
+    var w = S.warnings(p).slice().concat(p.dateIssues || []);
+    var inf = INFO[p.id]; if (inf && inf.inactive) w.push("Inativo — motivo: " + inf.reason);
+    else if (inf && inf.risk) w.push("Perigo de ficar inativo: " + inf.streak + " meses seguidos sem pregar");
     if (p.area === "rp" && p.status !== "Regular Pioneer") w.push("Não está marcado como pioneiro regular");
     if (p.area !== "rp" && p.status === "Regular Pioneer") w.push("Pioneiro regular: mova para “Pioneiros regulares”");
     return w;
@@ -128,22 +153,24 @@
         '<td><input inputmode="decimal" data-mk="hours" value="' + esc(m.hours) + '" aria-label="Horas"></td>' +
         '<td><input data-mk="comments" value="' + esc(m.comments) + '" aria-label="Observações"></td></tr>';
     }).join("");
-    var move = '<label class="full">Mover para' + sel("area", p.area, areas().map(function (a) { return [a.id, a.name]; })) + "</label>";
+    var move = '<label class="full">Mover para' + sel("area", p.area, homeAreas().map(function (a) { return [a.id, a.name]; })) + "</label>";
     return '<details class="card" data-id="' + p.id + '"><summary><div><strong>' + esc(A.fullName(p)) + "</strong>" +
       '<div class="sub">' + esc([A.cardYear(p) ? "Ano " + A.cardYear(p) : "Ano não lido", role, ST[p.status]].filter(Boolean).join(" · ")) + "</div></div>" +
       '<span class="badge ' + (w.length ? "warn" : "ok") + '">' + (w.length ? "⚠ " + w.length : "✓") + '</span></summary><div class="body">' +
       (w.length ? '<ul class="warns">' + w.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "") +
+      (p.area === "rp" && p.status !== "Regular Pioneer" ? '<button class="soft markrp" data-markrp>Marcar como pioneiro regular</button>' : "") +
       '<div class="grid">' + move +
       '<label>Primeiro nome<input data-k="firstname" value="' + esc(p.firstname) + '"></label>' +
       '<label>Sobrenome<input data-k="lastname" value="' + esc(p.lastname) + '"></label>' +
       '<label class="full">Nome do meio<input data-k="middlename" value="' + esc(p.middlename) + '"></label>' +
       '<label>Sexo' + sel("sex", p.sex, [["", "—"], ["Male", "Masculino"], ["Female", "Feminino"]]) + "</label>" +
       '<label>Designação' + sel("appt", p.appt, [["", "Nenhuma"], ["Elder", "Ancião"], ["MS", "Servo ministerial"]]) + "</label>" +
-      '<label>Nascimento<input type="date" data-k="birth" value="' + esc(p.birth) + '"></label>' +
-      '<label>Batismo<input type="date" data-k="baptism" value="' + esc(p.baptism) + '"></label>' +
+      '<label>Nascimento<input data-date="birth" inputmode="numeric" placeholder="dd/mm/aaaa" value="' + esc(A.dateBr(p.birth)) + '"></label>' +
+      '<label>Batismo<input data-date="baptism" inputmode="numeric" placeholder="dd/mm/aaaa" value="' + esc(A.dateBr(p.baptism)) + '"></label>' +
       '<label class="full">Ano de serviço<input data-k="serviceYear" value="' + esc(p.serviceYear) + '" placeholder="Ex.: 2026/2027"></label>' +
       '<label class="full">Situação' + sel("status", p.status, [["Baptized Publisher", "Publicador batizado"], ["Unbaptized Publisher", "Publicador não batizado"], ["Regular Pioneer", "Pioneiro regular"], ["Continuous Auxiliary Pioneer", "Pioneiro auxiliar contínuo"]]) + "</label>" +
       '</div><table class="months"><thead><tr><th>Mês</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th>Obs.</th></tr></thead><tbody>' + rows + "</tbody></table>" +
+      '<div class="pendbar"' + (pend[p.id] ? "" : " hidden") + '><span>● Há mudanças não aplicadas</span><button class="primary" data-apply>✓ Aplicar mudanças</button></div>' +
       '<div class="cardtools"><button class="soft" data-replace>⟳ Trocar por PDF novo</button><button class="rm" data-rm>Remover este cartão</button></div></div></details>';
   }
 
@@ -155,10 +182,41 @@
       (g ? '<input data-g="name" value="' + esc(g.name) + '" aria-label="Nome do grupo" placeholder="Nome do grupo">' +
         '<input data-g="overseer" value="' + esc(g.overseer) + '" aria-label="Superintendente do grupo" placeholder="Superintendente do grupo">' : "") +
       '<span class="count">' + count + "</span></div>" +
-      '<div class="arow"><button class="soft" data-add>⬆ Importar S-21</button><button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
+      unmarkedHtml(id) + riskHtml(id) +
+      (id === "in" ? '<p class="muted small">Quem tem a palavra “inativo” no cartão ou 6 meses seguidos ou mais sem pregar. Não conta nos grupos de campo. Volta ao grupo de origem ao recalcular, se voltar a pregar.</p>' : "") +
+      '<div class="arow">' + (id === "in" ? "" : '<button class="soft" data-add>⬆ Importar S-21</button>') + '<button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
       '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? A.people(list).sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); }).map(personHtml).join("") : "") + "</div>" +
       doneHtml(id) +
       (g && state.groups.length > 1 ? '<button class="rmgroup" data-delgroup>Remover grupo</button>' : "") + "</div>";
+  }
+
+  function unmarkedHtml(id) {
+    if (id !== "rp") return "";
+    var n = state.cards.filter(function (p) { return p.area === "rp" && p.status !== "Regular Pioneer"; }).length;
+    return n ? '<div class="donebar warnbar"><span>⚠ ' + n + (n === 1 ? " sem marcação de pioneiro" : " sem marcação de pioneiro") + '</span><button class="link" data-markall>Marcar todos</button></div>' : "";
+  }
+  function riskHtml(id) {
+    if (id === "rp" || id === "in") return "";
+    var seen = {}, list = [];
+    state.cards.forEach(function (p) {
+      var i = INFO[p.id]; if (!i || !i.risk || (id !== "all" && effArea(p) !== id)) return;
+      var k = A.fullName(p).toLowerCase(); if (seen[k]) return; seen[k] = 1; list.push({ id: p.id, name: A.fullName(p), n: i.streak });
+    });
+    if (!list.length) return "";
+    list.sort(function (a, b) { return b.n - a.n || a.name.localeCompare(b.name, "pt"); });
+    return '<div class="risk"><strong>⚠ Perigo de ficar inativo (' + list.length + ")</strong>" + list.map(function (x) { return '<button class="item tap" data-person="' + esc(x.id) + '"><strong>' + esc(x.name) + "</strong><small>" + x.n + " meses seguidos sem pregar</small></button>"; }).join("") + "</div>";
+  }
+  /** Geral: todas as pessoas, separadas por grupo, Pioneiros regulares e Inativos. */
+  function allHtml() {
+    if (!state.cards.length) return "";
+    var open = !!openAreas.all;
+    var body = open ? areas().map(function (a) {
+      var list = cardsOf(a.id); if (!list.length) return "";
+      var ppl = A.people(list).sort(function (x, y) { return x.name.localeCompare(y.name, "pt"); });
+      return '<p class="divider">' + esc(a.name) + " (" + ppl.length + ")</p>" + ppl.map(personHtml).join("");
+    }).join("") : "";
+    return '<div class="area" data-a="all">' + riskHtml("all") + '<div class="arow"><button class="soft" data-view aria-expanded="' + open + '">' + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
+      '<div class="cards"' + (open ? "" : " hidden") + ">" + body + "</div></div>";
   }
 
   // Uma pessoa = um item; os cartões de anos diferentes viram pílulas dentro dele.
@@ -181,6 +239,7 @@
 
   function doneHtml(id) {
     var d = state.done[id];
+    if (id === "in") return "";
     if (d) return '<div class="donebar"><span>✓ Analisado em ' + esc(d.slice(8, 10) + "/" + d.slice(5, 7)) + '</span><button class="link" data-reopen>Reabrir</button></div>';
     return '<button class="primary finish" data-finish>✓ Encerrar análise ' + (id === "rp" ? "dos pioneiros" : "do grupo") + "</button>";
   }
@@ -189,9 +248,9 @@
   function renderTotals() {
     var box = $("totalsBox");
     if (!state.cards.length) { box.hidden = true; return; }
-    var t = A.monthlyTotals(state.cards, { from: state.period.from, to: state.period.to, area: state.active });
+    var t = A.monthlyTotals(view, { from: state.period.from, to: state.period.to, area: state.active });
     box.hidden = !t.months.length; if (!t.months.length) return;
-    var secs = A.TOTAL_SECTIONS.filter(function (s) { return state.active === "rp" ? s.key === "rp" : state.active === "all" ? true : s.key !== "rp"; });
+    var secs = A.TOTAL_SECTIONS.filter(function (s) { return state.active === "in" ? s.key !== "rp" : state.active === "rp" ? s.key === "rp" : state.active === "all" ? true : s.key !== "rp"; });
     var head = "<tr><th></th>" + t.months.map(function (k) { return "<th>" + A.label(k).replace(/ \d\d(\d\d)$/, " $1") + "</th>"; }).join("") + "<th>Total</th></tr>";
     var body = secs.map(function (s) {
       return '<tr class="sec"><th colspan="' + (t.months.length + 2) + '">' + esc(s.label) + "</th></tr>" + s.rows.map(function (r) {
@@ -213,14 +272,16 @@
       var cls = x.diff < 0 ? "warn" : "ok", sign = x.diff < 0 ? "⚠ −" + hrs(-x.diff) : "✓ +" + hrs(x.diff);
       return '<button class="item tap goal" data-person="' + esc(x.id) + '"><div class="gtop"><strong>' + esc(x.name) + (x.late ? ' <small>(iniciou em ' + esc(A.label(x.start)) + ")</small>" : "") + '</strong><span class="badge ' + cls + '">' + sign + "</span></div>" +
         "<p>Feitas " + hrs(x.done) + " · Meta até agora " + hrs(x.goalNow) + (x.late ? " · Meta do ano " + hrs(x.goalYear) + " (" + (x.goalYear / 50) + " meses × 50)" : "") + "</p>" +
-        "<p>Média " + hrs(x.avg) + "/mês" + (x.left ? " · precisa " + hrs(x.need) + "/mês até agosto" : "") + "</p></button>";
+        "<p>Média " + hrs(x.avg) + "/mês" + (x.left ? " · precisa " + hrs(x.need) + "/mês até agosto" : "") + "</p>" +
+        (x.low && x.low.length ? '<div class="lowm"><small>Abaixo de 50 h:</small>' + x.low.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? " · “" + esc(l.comments) + "”" : "") + "</p>"; }).join("") + "</div>" : "") + "</button>";
     }).join("");
   }
   function renderGoals() {
     var box = $("rpBox");
     var y = rpYear();
     if (state.active !== "rp" || !y) { box.hidden = true; return; }
-    var r = A.pioneerYear(state.cards, y);
+    var r = A.pioneerYear(view, y);
+    r.list = r.list.filter(function (x) { return x.area === "rp"; });
     box.hidden = false;
     $("rpHead").textContent = "Ano de serviço " + y + " (set/" + (y - 1) + " a ago/" + y + ")" + (r.upTo ? " · até " + A.label(r.upTo) + ": meta " + hrs(50 * A.monthsBetween((y - 1) + "-09", r.upTo).length) : "");
     var low = r.list.filter(function (x) { return x.diff < 0; }).length;
@@ -231,8 +292,8 @@
   // ---------- resumo ----------
   function tilesFor() { return state.active === "rp" ? A.RP_TILES : A.TILES; }
   function analysis(scope) {
-    if ((scope || "all") === "rp") return A.analyzeRp(state.cards, { from: state.period.from, to: state.period.to, studyRule: state.studyRule }, rpYear());
-    return A.analyze(state.cards, { from: state.period.from, to: state.period.to, studyRule: state.studyRule, area: scope || "all" });
+    if ((scope || "all") === "rp") return A.analyzeRp(view, { from: state.period.from, to: state.period.to, studyRule: state.studyRule }, rpYear());
+    return A.analyze(view, { from: state.period.from, to: state.period.to, studyRule: state.studyRule, area: scope || "all" });
   }
   function renderSummary() {
     $("summaryBox").hidden = !state.cards.length;
@@ -320,7 +381,7 @@
     $("sheetTitle").textContent = "Conferir antes de importar";
     lastList = null;
     $("sheetBody").innerHTML = groups.map(function (g) {
-      var dest = g.rp ? "Pioneiros reg." : g.name === null ? areaName(fallback) + " (grupo aberto)" : groupByName(g.name) ? g.name + " (já existe)" : g.name + " (novo grupo)";
+      var dest = g.rp ? "Pioneiros reg." : g.inactive ? "Inativos" : g.name === null ? areaName(fallback) + " (grupo aberto)" : groupByName(g.name) ? g.name + " (já existe)" : g.name + " (novo grupo)";
       var n = g.cards ? g.cards.length : g.items.length, unit = g.cards ? (n === 1 ? " cartão" : " cartões") : (n === 1 ? " PDF" : " PDFs");
       return '<div class="imp"><div><strong>' + esc(g.name === null ? (g.cards ? "Sem grupo no arquivo" : "PDFs soltos") : g.name) + "</strong><br><small>→ " + esc(dest) + "</small></div><span>" + n + unit + "</span></div>";
     }).join("") + '<div class="sheetbtns"><button class="ghost" data-impcancel>Cancelar</button><button class="primary" data-impgo>Importar</button></div>';
@@ -332,15 +393,15 @@
     for (var i = 0; i < groups.length; i++) {
       var g = groups[i], area;
       if (g.rp) area = "rp";
-      else if (g.name === null) area = fallback;
+      else if (g.name === null || g.inactive) area = fallback;
       else { var ex = groupByName(g.name); if (!ex) { ex = { id: uid("g"), name: g.name, overseer: "", note: "" }; state.groups.push(ex); made++; } area = ex.id; }
-      var r = g.cards ? { ok: 0, upd: 0, bad: [] } : await readInto(g.items.map(function (x) { return x.file; }), area);
+      var r = g.cards ? { ok: 0, upd: 0, bad: [] } : await readInto(g.items.map(function (x) { return x.file; }), area, g.inactive);
       if (g.cards) g.cards.forEach(function (c) { if (placeCard(c, area) === "upd") r.upd++; else r.ok++; });
       tot.ok += r.ok; tot.upd += r.upd; tot.bad = tot.bad.concat(r.bad);
     }
     // grupo inicial vazio e sem nome editado some quando vieram grupos das pastas
     if (made && state.groups.length > made) state.groups = state.groups.filter(function (g) { return !(g.id === "g1" && g.name === "Grupo 1" && !cardsOf("g1").length && !g.note); });
-    touch(); fixPeriod();
+    recalc(); touch(); fixPeriod();
     var parts = [];
     if (made) parts.push(made + (made === 1 ? " grupo criado" : " grupos criados"));
     parts.push(tot.ok + (tot.ok === 1 ? " cartão novo" : " cartões novos"));
@@ -387,6 +448,7 @@
     if (!tabs.some(function (t) { return t.id === state.active; })) state.active = "all";
     $("tabs").innerHTML = tabs.map(function (t) {
       var n = A.people(t.id === "all" ? state.cards : cardsOf(t.id)).length;
+      if (t.id === "in") return '<button class="pill inpill" role="tab" data-tab="in" aria-selected="' + (state.active === "in") + '">Inativos<small>' + n + "</small></button>";
       return '<button class="pill" role="tab" data-tab="' + t.id + '" aria-selected="' + (t.id === state.active) + '">' + (state.done[t.id] ? '<i class="done" aria-label="analisado">✓</i>' : "") + esc(t.id === "rp" ? "Pioneiros reg." : t.name) + "<small>" + n + "</small></button>";
     }).join("") + '<button class="pill add" data-addgroup>+ Grupo</button>';
   }
@@ -397,7 +459,7 @@
     renderPeriod();
     renderTabs();
     var g = state.groups.filter(function (x) { return x.id === state.active; })[0];
-    $("area").innerHTML = state.active === "all" ? "" : areaHtml(state.active, g || null);
+    $("area").innerHTML = state.active === "all" ? allHtml() : areaHtml(state.active, g || null);
     openCards.forEach(function (id) { var d = document.querySelector('.card[data-id="' + id + '"]'); if (d) d.open = true; });
     renderSummary();
     renderTotals();
@@ -446,6 +508,10 @@
   function onAreas(e) {
     var el = e.target, id = areaOf(el); if (!id) return;
     if (e.type === "click") {
+      var per = el.closest("[data-person]"); if (per) { lastList = null; openPerson(per.dataset.person); return; }
+      if (el.closest("[data-apply]")) { recalc(); touch(); render(); say("Mudanças aplicadas. Os números foram recalculados."); return; }
+      if (el.closest("[data-markrp]")) { var mc = state.cards.filter(function (x) { return x.id === el.closest(".card").dataset.id; })[0]; if (mc) { mc.status = "Regular Pioneer"; recalc(); touch(); render(); } return; }
+      if (el.closest("[data-markall]")) { state.cards.forEach(function (x) { if (x.area === "rp") x.status = "Regular Pioneer"; }); recalc(); touch(); render(); return; }
       if (el.closest("[data-add]")) { addTo = id; $("pdfs").click(); return; }
       if (el.closest("[data-finish]")) { state.done[id] = today(); touch(); render(); return; }
       if (el.closest("[data-reopen]")) { delete state.done[id]; touch(); render(); return; }
@@ -455,7 +521,7 @@
         if (!confirm(n ? "Remover o grupo e os " + n + " cartões dele?" : "Remover este grupo?")) return;
         state.groups = state.groups.filter(function (g) { return g.id !== id; });
         state.cards = state.cards.filter(function (p) { return p.area !== id; });
-        state.active = "all"; touch(); fixPeriod(); render(); return;
+        state.active = "all"; recalc(); touch(); fixPeriod(); render(); return;
       }
       var cy = el.closest("[data-cyear]");
       if (cy) { var pk = el.closest("[data-pk]").dataset.pk; openYear[pk] = cy.dataset.cyear; openPeople[pk] = true; render(); return; }
@@ -464,7 +530,7 @@
       if (el.closest("[data-replace]")) { replaceId = el.closest(".card").dataset.id; $("pdfOne").click(); return; }
       if (el.matches("[data-rm]")) {
         var c = el.closest(".card");
-        if (confirm("Remover este cartão?")) { state.cards = state.cards.filter(function (p) { return p.id !== c.dataset.id; }); touch(); fixPeriod(); render(); }
+        if (confirm("Remover este cartão?")) { state.cards = state.cards.filter(function (p) { return p.id !== c.dataset.id; }); recalc(); touch(); fixPeriod(); render(); }
       }
       return;
     }
@@ -473,15 +539,24 @@
     var card = el.closest(".card"); if (!card) return;
     var p = state.cards.filter(function (x) { return x.id === card.dataset.id; })[0]; if (!p) return;
     touch();
-    if (el.dataset.k === "area") { p.area = el.value; openAreas[el.value] = true; render(); return; }
-    if (el.dataset.k === "serviceYear") { S.setServiceYear(p, el.value); fixPeriod(); render(); return; }
+    if (el.dataset.k === "area") { p.area = el.value; openAreas[el.value] = true; recalc(); render(); return; }
+    if (el.dataset.k === "serviceYear") { S.setServiceYear(p, el.value); recalc(); fixPeriod(); render(); return; }
+    pend[p.id] = true;
+    if (el.dataset.date) {
+      var dv = A.parseDateAny(el.value), lbl = el.dataset.date === "birth" ? "Nascimento" : "Batismo";
+      p.dateIssues = (p.dateIssues || []).filter(function (x) { return x.indexOf(lbl) !== 0; });
+      if (!el.value.trim()) p[el.dataset.date] = "";
+      else if (dv) p[el.dataset.date] = dv;
+      else p.dateIssues.push(lbl + " não entendido: “" + el.value.trim() + "”. Corrija como dd/mm/aaaa.");
+      render(); return;
+    }
     if (el.dataset.k) { p[el.dataset.k] = el.value; render(); return; }
     if (el.dataset.mk) {
       var m = p.months[Number(el.closest("tr").dataset.m)], k = el.dataset.mk;
       if (el.type === "checkbox") m[k] = el.checked;
       else if (k === "comments") m[k] = el.value.trim();
       else { var num = Number(el.value.replace(",", ".")); m[k] = el.value.trim() && isFinite(num) ? num : null; }
-      renderSummary(); renderTotals(); renderGoals(); renderPeriod();
+      var bar = card.querySelector(".pendbar"); if (bar) bar.hidden = false;
     }
   }
   $("area").addEventListener("click", onAreas); $("area").addEventListener("change", onAreas);
@@ -499,7 +574,7 @@
   }
   $("save").addEventListener("click", function () {
     if (!state.cards.length) { say("Adicione cartões antes de salvar."); return; }
-    var data = { app: "visitasc-analisador", version: 1, savedAt: new Date().toISOString(), congregation: state.congregation, period: state.period, preset: state.preset, year: state.year, studyRule: state.studyRule, groups: state.groups, done: state.done, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards };
+    var data = Object.assign(snapshot(), { savedAt: new Date().toISOString() });
     download(JSON.stringify(data), "analise-" + slug(state.congregation) + "-" + today() + ".json", "application/json;charset=utf-8");
     dirty = false; say("");
   });
@@ -511,6 +586,10 @@
     var f = e.target.files[0]; e.target.value = ""; if (!f) return;
     try {
       var d = JSON.parse(await f.text());
+      loadData(d); dirty = false; say(""); render();
+    } catch (err) { say("Este arquivo não é uma análise salva pelo Analisador de congregações."); }
+  });
+  function loadData(d) {
       if (!d || d.app !== "visitasc-analisador" || !Array.isArray(d.cards) || !Array.isArray(d.groups)) throw new Error("formato");
       var groups = d.groups.filter(function (g) { return g && g.id; }).map(function (g) { return { id: String(g.id), name: String(g.name || ""), overseer: String(g.overseer || ""), note: String(g.note || "") }; });
       if (!groups.length) groups = blank().groups;
@@ -522,24 +601,53 @@
       });
       var yr = d.year ? Number(d.year) : A.yearOfMonth(d.period && d.period.to);
       state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, preset: d.preset || (d.period && d.period.from ? "custom" : "6m"), active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), done: d.done && typeof d.done === "object" ? d.done : {}, cards: cards };
-      openAreas = {}, openYear = {}, openPeople = {}; dirty = false; fixPeriod(); say(""); render();
-    } catch (err) { say("Este arquivo não é uma análise salva pelo Analisador de congregações."); }
-  });
+      if (d.active) state.active = String(d.active);
+      openAreas = {}, openYear = {}, openPeople = {}; recalc(); fixPeriod(); scheduleSave();
+  }
   $("clear").addEventListener("click", function () {
     if (!confirm("Limpar grupos, cartões e anotações?")) return;
-    state = blank(); openAreas = {}, openYear = {}, openPeople = {}; dirty = false; say(""); render();
+    state = blank(); openAreas = {}, openYear = {}, openPeople = {}; dirty = false; recalc(); say(""); render();
+    store.del().catch(function () {}); try { localStorage.removeItem(LS_KEY); } catch (e) {}
   });
-  window.addEventListener("beforeunload", function (e) { if (dirty && state.cards.length) { e.preventDefault(); e.returnValue = ""; } });
+
+  // ---------- guardar no aparelho (atualizar a página não apaga; só "Limpar tudo") ----------
+  var LS_KEY = "analisador.state", saveT = null;
+  var store = (function () {
+    function db() { return new Promise(function (res, rej) { if (!window.indexedDB) return rej(new Error("sem idb")); var r = indexedDB.open("analisador", 1); r.onupgradeneeded = function () { r.result.createObjectStore("kv"); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+    function tx(mode, fn) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction("kv", mode), st = t.objectStore("kv"), q = fn(st); t.oncomplete = function () { res(q && q.result); }; t.onerror = function () { rej(t.error); }; }); }); }
+    return { get: function () { return tx("readonly", function (s) { return s.get("state"); }); }, put: function (v) { return tx("readwrite", function (s) { s.put(v, "state"); }); }, del: function () { return tx("readwrite", function (s) { s.delete("state"); }); } };
+  })();
+  function snapshot() { return { app: "visitasc-analisador", version: 1, congregation: state.congregation, period: state.period, preset: state.preset, year: state.year, studyRule: state.studyRule, active: state.active, groups: state.groups, done: state.done, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards }; }
+  function scheduleSave() {
+    clearTimeout(saveT);
+    saveT = setTimeout(function () {
+      var d = JSON.parse(JSON.stringify(snapshot()));
+      store.put(d).catch(function () { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e) {} });
+    }, 400);
+  }
+  window.addEventListener("pagehide", function () { if (saveT) { clearTimeout(saveT); saveT = null; try { localStorage.setItem(LS_KEY, JSON.stringify(snapshot())); } catch (e) {} } });
+  $("recalc").addEventListener("click", function () { recalc(); fixPeriod(); render(); say("Dados recalculados com as mudanças dos cartões."); });
 
   // ---------- relatório PDF (pdf-lib) ----------
-  function pdfSafe(t) {
-    return String(t == null ? "" : t).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-").replace(/›/g, ">").replace(/…/g, "...").replace(/[^\n\x20-\x7E\u00A0-\u00FF]/g, "");
+  var PDF_PARTS = [
+    ["sumAll", "Resumo geral", true], ["sumGroups", "Resumo por grupo", true], ["totals", "Totais mensais", true],
+    ["goals", "Meta dos pioneiros regulares", true], ["inactive", "Inativos e em perigo", true], ["lists", "Listas com nomes", false],
+    ["notes", "Anotações", true], ["legend", "Legenda (o que significa cada item)", true]
+  ];
+  function pdfPrefs() {
+    var o = {}; PDF_PARTS.forEach(function (x) { o[x[0]] = x[2]; });
+    try { var s = JSON.parse(localStorage.getItem("analisador.pdfParts") || "{}"); Object.keys(o).forEach(function (k) { if (typeof s[k] === "boolean") o[k] = s[k]; }); } catch (e) {}
+    return o;
   }
-  async function buildPdf() {
+  function pdfSafe(t) {
+    return String(t == null ? "" : t).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-").replace(/›/g, ">").replace(/…/g, "...").replace(/●/g, "-").replace(/[^\n\x20-\x7E\u00A0-\u00FF]/g, "");
+  }
+  async function buildPdf(opt) {
     var doc = await PDFLib.PDFDocument.create();
     var font = await doc.embedFont(PDFLib.StandardFonts.Helvetica), bold = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
     var W = 595.28, H = 841.89, M = 44, page, y;
-    var grey = PDFLib.rgb(0.42, 0.42, 0.45), ink = PDFLib.rgb(0.1, 0.1, 0.12), line = PDFLib.rgb(0.85, 0.85, 0.88);
+    var grey = PDFLib.rgb(0.42, 0.42, 0.45), ink = PDFLib.rgb(0.1, 0.1, 0.12), line = PDFLib.rgb(0.86, 0.86, 0.89);
+    var accent = PDFLib.rgb(0.16, 0.36, 0.62), soft = PDFLib.rgb(0.95, 0.96, 0.98), white = PDFLib.rgb(1, 1, 1), red = PDFLib.rgb(0.72, 0.16, 0.16);
     function newPage() { page = doc.addPage([W, H]); y = H - M; }
     function need(h) { if (y - h < M + 14) newPage(); }
     function wrap(text, f, size, width) {
@@ -560,87 +668,158 @@
       wrap(t, f, size, W - M - x).forEach(function (l) { need(size + 3); page.drawText(l, { x: x, y: y - size, size: size, font: f, color: o.color || ink }); y -= size + (o.gap == null ? 4 : o.gap); });
     }
     function fit(t, f, size, width) { t = pdfSafe(t); while (t.length > 1 && f.widthOfTextAtSize(t, size) > width) t = t.slice(0, -1); return t; }
-    function rule() { need(10); page.drawLine({ start: { x: M, y: y - 4 }, end: { x: W - M, y: y - 4 }, thickness: 0.6, color: line }); y -= 10; }
+    function heading(t) {
+      need(46); y -= 8;
+      page.drawRectangle({ x: M, y: y - 16, width: 4, height: 16, color: accent });
+      page.drawText(pdfSafe(t), { x: M + 10, y: y - 13, size: 13, font: bold, color: ink }); y -= 26;
+    }
+    function band(i, h) { if (i % 2 === 0) page.drawRectangle({ x: M, y: y - h + 3, width: W - 2 * M, height: h, color: soft }); }
 
     newPage();
     var rl = A.STUDY_RULES.filter(function (r) { return r.key === state.studyRule; })[0];
     var general = analysis("all");
-    text("Análise da congregação" + (state.congregation ? " - " + state.congregation : ""), { size: 18, bold: true, gap: 6 });
-    text("Período: " + periodLabel() + " (" + general.months.length + " meses com relatório)", { color: grey });
-    text("Dirige estudos: " + (rl ? rl.label.toLowerCase() : ""), { color: grey });
-    text("Gerado em " + today().split("-").reverse().join("/") + " pelo Analisador de congregações (VisitaSC). Dados lidos dos cartões S-21.", { color: grey, gap: 10 });
+    // capa
+    page.drawRectangle({ x: 0, y: H - 120, width: W, height: 120, color: accent });
+    page.drawText(pdfSafe("Análise da congregação"), { x: M, y: H - 58, size: 22, font: bold, color: white });
+    page.drawText(fit(state.congregation || "Congregação", font, 15, W - 2 * M), { x: M, y: H - 84, size: 15, font: font, color: white });
+    page.drawText(pdfSafe("Período: " + periodLabel() + " · " + general.months.length + " meses com relatório"), { x: M, y: H - 104, size: 10, font: font, color: white });
+    y = H - 140;
+    text("Gerado em " + today().split("-").reverse().join("/") + " pelo Analisador de congregações. Dados lidos dos cartões S-21.", { color: grey });
+    text("Quem conta como “Dirige estudos”: " + (rl ? rl.label.toLowerCase() : ""), { color: grey, gap: 8 });
 
-    // Tabela do resumo: Geral + cada área, até 5 colunas por tabela
-    var scopes = [{ id: "all", name: "Geral" }].concat(areas()), results = {};
-    scopes.forEach(function (s) { results[s.id] = s.id === "all" ? general : analysis(s.id); });
-    text("Resumo", { size: 13, bold: true, gap: 6 });
-    for (var i = 0; i < scopes.length; i += 5) {
-      var cols = scopes.slice(i, i + 5), labW = 180, colW = (W - 2 * M - labW) / cols.length;
-      need(16 + A.TILES.length * 15);
-      var heads = cols.map(function (s) { return wrap(s.name, bold, 8.5, colW - 6).slice(0, 2); }), hl = Math.max.apply(null, heads.map(function (h) { return h.length; }));
-      heads.forEach(function (h, j) { h.forEach(function (l, n) { page.drawText(fit(l, bold, 8.5, colW - 6), { x: M + labW + j * colW + 3, y: y - 8.5 - n * 10, size: 8.5, font: bold, color: ink }); }); });
-      y -= 4 + hl * 10; rule();
-      A.TILES.forEach(function (t) {
-        page.drawText(fit(t.label, font, 9.5, labW - 6), { x: M, y: y - 9.5, size: 9.5, font: font, color: ink });
-        cols.forEach(function (s, j) { page.drawText(String(results[s.id].counts[t.key]), { x: M + labW + j * colW + 3, y: y - 9.5, size: 9.5, font: bold, color: ink }); });
-        y -= 15;
-      });
-      y -= 8;
-    }
-
-    text("Listas (geral)", { size: 13, bold: true, gap: 6 });
-    A.TILES.filter(function (t) { return t.list; }).forEach(function (t) {
-      var items = general.lists[t.key];
-      need(30); text(t.label + " (" + items.length + ")", { size: 11, bold: true, gap: 3 });
-      if (!items.length) text("Ninguém neste período.", { indent: 10, color: grey, gap: 8 });
-      items.forEach(function (it, n) { text(it.name + " - " + areaName(it.area), { indent: 10, bold: true, gap: 1 }); text(it.detail, { indent: 20, color: grey, gap: n === items.length - 1 ? 8 : 4 }); });
-    });
-
-    var tt = A.monthlyTotals(state.cards, { from: state.period.from, to: state.period.to, area: "all" });
-    if (tt.months.length) {
-      need(40); text("Totais mensais (geral)", { size: 13, bold: true, gap: 6 });
-      for (var a = 0; a < tt.months.length; a += 6) {
-        var ms = tt.months.slice(a, a + 6), lw = 170, cw = (W - 2 * M - lw) / ms.length;
-        need(30);
-        ms.forEach(function (k, j) { page.drawText(pdfSafe(A.label(k)), { x: M + lw + j * cw + 3, y: y - 9, size: 8.5, font: bold, color: ink }); });
-        y -= 12; rule();
-        A.TOTAL_SECTIONS.forEach(function (sec) {
-          need(14); page.drawText(pdfSafe(sec.label), { x: M, y: y - 9.5, size: 9.5, font: bold, color: grey }); y -= 14;
-          sec.rows.forEach(function (rw) {
-            need(14); page.drawText(fit(rw[1], font, 9.5, lw - 14), { x: M + 8, y: y - 9.5, size: 9.5, font: font, color: ink });
-            ms.forEach(function (k, j) { page.drawText(String(Math.round(tt.rows[k][rw[0]] * 10) / 10), { x: M + lw + j * cw + 3, y: y - 9.5, size: 9.5, font: bold, color: ink }); });
-            y -= 14;
-          });
+    function summaryTable(scopes) {
+      var results = {}; scopes.forEach(function (s) { results[s.id] = s.id === "all" ? general : analysis(s.id); });
+      for (var i = 0; i < scopes.length; i += 5) {
+        var cols = scopes.slice(i, i + 5), labW = 190, colW = (W - 2 * M - labW) / cols.length;
+        need(24 + A.TILES.length * 16);
+        page.drawRectangle({ x: M, y: y - 20, width: W - 2 * M, height: 20, color: accent });
+        cols.forEach(function (s, j) { page.drawText(fit(s.name, bold, 8.5, colW - 6), { x: M + labW + j * colW + 4, y: y - 14, size: 8.5, font: bold, color: white }); });
+        page.drawText("Indicador", { x: M + 6, y: y - 14, size: 8.5, font: bold, color: white });
+        y -= 22;
+        A.TILES.forEach(function (t, n) {
+          band(n, 16);
+          page.drawText(fit(t.label, font, 9.5, labW - 10), { x: M + 6, y: y - 9.5, size: 9.5, font: font, color: ink });
+          cols.forEach(function (s, j) { page.drawText(String(results[s.id].counts[t.key]), { x: M + labW + j * colW + 4, y: y - 9.5, size: 9.5, font: bold, color: ink }); });
+          y -= 16;
         });
-        y -= 8;
+        y -= 10;
       }
     }
-    var gy = rpYear(), goals = gy ? A.pioneerYear(state.cards, gy) : null;
-    if (goals && goals.list.length) {
-      need(40); text("Pioneiros regulares - meta anual " + gy + " (600 h)", { size: 13, bold: true, gap: 6 });
+    if (opt.sumAll) { heading("Resumo geral"); summaryTable([{ id: "all", name: "Geral" }]); }
+    if (opt.sumGroups) { heading("Resumo por grupo"); summaryTable(areas()); }
+
+    if (opt.totals) {
+      var tt = A.monthlyTotals(view, { from: state.period.from, to: state.period.to, area: "all" });
+      if (tt.months.length) {
+        heading("Totais mensais (toda a congregação)");
+        for (var a = 0; a < tt.months.length; a += 6) {
+          var ms = tt.months.slice(a, a + 6), lw = 170, cw = (W - 2 * M - lw) / ms.length;
+          need(40);
+          page.drawRectangle({ x: M, y: y - 20, width: W - 2 * M, height: 20, color: accent });
+          ms.forEach(function (k, j) { page.drawText(pdfSafe(A.label(k)), { x: M + lw + j * cw + 4, y: y - 14, size: 8.5, font: bold, color: white }); });
+          y -= 22;
+          A.TOTAL_SECTIONS.forEach(function (sec) {
+            need(16); page.drawText(pdfSafe(sec.label), { x: M + 4, y: y - 10, size: 9.5, font: bold, color: accent }); y -= 15;
+            sec.rows.forEach(function (rw, n) {
+              need(16); band(n, 15);
+              page.drawText(fit(rw[1], font, 9.5, lw - 14), { x: M + 12, y: y - 9.5, size: 9.5, font: font, color: ink });
+              ms.forEach(function (k, j) { page.drawText(String(Math.round(tt.rows[k][rw[0]] * 10) / 10), { x: M + lw + j * cw + 4, y: y - 9.5, size: 9.5, font: bold, color: ink }); });
+              y -= 15;
+            });
+          });
+          y -= 10;
+        }
+      }
+    }
+
+    var gy = rpYear(), goals = gy ? A.pioneerYear(view, gy) : null;
+    if (opt.goals && goals && goals.list.length) {
+      heading("Pioneiros regulares - meta anual " + gy + " (600 h)");
       goals.list.forEach(function (x) {
-        text(x.name + (x.late ? " (iniciou em " + A.label(x.start) + ")" : "") + ": " + (x.diff < 0 ? "atrasado " + hrs(-x.diff) : "em dia +" + hrs(x.diff)), { bold: true, gap: 1 });
-        text("Feitas " + hrs(x.done) + " - meta até agora " + hrs(x.goalNow) + " - meta do ano " + hrs(x.goalYear) + " - média " + hrs(x.avg) + "/mês" + (x.left ? " - precisa " + hrs(x.need) + "/mês" : ""), { indent: 10, color: grey, gap: 6 });
+        need(40);
+        text(x.name + (x.late ? " (iniciou em " + A.label(x.start) + ")" : "") + ": " + (x.diff < 0 ? "atrasado " + hrs(-x.diff) : "em dia +" + hrs(x.diff)), { bold: true, gap: 1, color: x.diff < 0 ? red : ink });
+        text("Feitas " + hrs(x.done) + " - meta até agora " + hrs(x.goalNow) + " - meta do ano " + hrs(x.goalYear) + " - média " + hrs(x.avg) + "/mês" + (x.left ? " - precisa " + hrs(x.need) + "/mês" : ""), { indent: 10, color: grey, gap: 2 });
+        (x.low || []).forEach(function (l) { text("Abaixo de 50 h em " + A.label(l.month) + ": " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? ' - "' + l.comments + '"' : ""), { indent: 20, size: 9, color: grey, gap: 2 }); });
+        y -= 6;
       });
     }
 
-    var notes = [["Geral", state.notes]].concat(state.groups.map(function (g) { return [g.name || "Grupo sem nome", g.note]; })).concat([["Pioneiros regulares", state.pioneersNote]]).filter(function (n) { return (n[1] || "").trim(); });
-    if (notes.length) {
-      need(40); text("Anotações do superintendente", { size: 13, bold: true, gap: 6 });
-      notes.forEach(function (n) { text(n[0], { size: 11, bold: true, gap: 3 }); text(n[1].trim(), { indent: 10, gap: 8 }); });
+    if (opt.inactive) {
+      var seen = {}, ina = [], risk = [];
+      state.cards.forEach(function (p) { var i = INFO[p.id], k = A.fullName(p).toLowerCase(); if (!i || seen[k]) return; if (i.inactive) { ina.push([A.fullName(p), i.reason, areaName(p.area)]); seen[k] = 1; } else if (i.risk) { risk.push([A.fullName(p), i.streak + " meses seguidos sem pregar", areaName(p.area)]); seen[k] = 1; } });
+      if (ina.length || risk.length) {
+        heading("Inativos e em perigo de ficar inativo");
+        [["Inativos (" + ina.length + ")", ina], ["Em perigo: 4 ou 5 meses sem pregar (" + risk.length + ")", risk]].forEach(function (b) {
+          if (!b[1].length) return;
+          text(b[0], { size: 11, bold: true, gap: 3 });
+          b[1].sort(function (x, z) { return x[0].localeCompare(z[0], "pt"); }).forEach(function (r) { text(r[0] + " - " + r[2] + " - " + r[1], { indent: 10, gap: 3 }); });
+          y -= 6;
+        });
+      }
+    }
+
+    if (opt.lists) {
+      heading("Listas (toda a congregação)");
+      A.TILES.filter(function (t) { return t.list; }).forEach(function (t) {
+        var items = general.lists[t.key];
+        need(30); text(t.label + " (" + items.length + ")", { size: 11, bold: true, gap: 3 });
+        if (!items.length) text("Ninguém neste período.", { indent: 10, color: grey, gap: 8 });
+        items.forEach(function (it, n) { text(it.name + " - " + areaName(it.area), { indent: 10, bold: true, gap: 1 }); text(it.detail, { indent: 20, color: grey, gap: n === items.length - 1 ? 8 : 4 }); });
+      });
+    }
+
+    if (opt.notes) {
+      var notes = [["Geral", state.notes]].concat(state.groups.map(function (g) { return [g.name || "Grupo sem nome", g.note]; })).concat([["Pioneiros regulares", state.pioneersNote]]).filter(function (n) { return (n[1] || "").trim(); });
+      if (notes.length) {
+        heading("Anotações do superintendente");
+        notes.forEach(function (n) { text(n[0], { size: 11, bold: true, gap: 3 }); text(n[1].trim(), { indent: 10, gap: 8 }); });
+      }
+    }
+
+    if (opt.legend) {
+      heading("Legenda");
+      [["Irregular", "pessoa que ficou pelo menos um mês do período sem pregar."],
+       ["Inativo", "6 meses seguidos ou mais sem pregar, ou anotação “inativo” no cartão."],
+       ["Em perigo", "4 ou 5 meses seguidos sem pregar."],
+       ["Pioneiros auxiliares diferentes", "cada pessoa conta uma vez, mesmo servindo em vários meses."],
+       ["Meta anual", "600 horas no ano de serviço (setembro a agosto) = 50 h por mês. Quem começou no meio do ano tem meta de 50 h por mês restante."],
+       ["Dirigem estudos", rl ? rl.label + "." : ""]].forEach(function (l) { text(l[0] + ": " + l[1], { gap: 4 }); });
     }
 
     var pages = doc.getPages();
-    pages.forEach(function (pg, k) { pg.drawText(pdfSafe("Página " + (k + 1) + " de " + pages.length), { x: W - M - 70, y: 24, size: 8, font: font, color: grey }); });
+    pages.forEach(function (pg, k) {
+      pg.drawLine({ start: { x: M, y: 34 }, end: { x: W - M, y: 34 }, thickness: 0.5, color: line });
+      pg.drawText(fit(state.congregation || "Análise da congregação", font, 8, 300), { x: M, y: 22, size: 8, font: font, color: grey });
+      pg.drawText(pdfSafe("Página " + (k + 1) + " de " + pages.length), { x: W - M - 70, y: 22, size: 8, font: font, color: grey });
+    });
     return doc.save();
   }
-  $("pdf").addEventListener("click", async function () {
+  $("pdf").addEventListener("click", function () {
     if (!state.cards.length) { say("Adicione cartões antes de gerar o relatório."); return; }
-    var b = $("pdf"); b.disabled = true;
-    try { download(new Blob([await buildPdf()], { type: "application/pdf" }), "analise-" + slug(state.congregation) + "-" + today() + ".pdf"); }
+    var o = pdfPrefs();
+    lastList = null;
+    $("sheetTitle").textContent = "Relatório PDF";
+    $("sheetBody").innerHTML = '<p class="muted small">Escolha o que entra no documento:</p>' + PDF_PARTS.map(function (x) {
+      return '<label class="chk"><input type="checkbox" data-part="' + x[0] + '"' + (o[x[0]] ? " checked" : "") + "> " + esc(x[1]) + "</label>";
+    }).join("") + '<div class="sheetbtns"><button class="ghost" data-pdfcancel>Cancelar</button><button class="primary" data-pdfgo>⬇ Gerar PDF</button></div>';
+    showSheet();
+  });
+  $("sheetBody").addEventListener("click", async function (e) {
+    if (e.target.closest("[data-pdfcancel]")) { $("sheet").close(); return; }
+    var go = e.target.closest("[data-pdfgo]"); if (!go) return;
+    var o = {}; $("sheetBody").querySelectorAll("[data-part]").forEach(function (c) { o[c.dataset.part] = c.checked; });
+    try { localStorage.setItem("analisador.pdfParts", JSON.stringify(o)); } catch (err) {}
+    go.disabled = true;
+    try { download(new Blob([await buildPdf(o)], { type: "application/pdf" }), "analise-" + slug(state.congregation) + "-" + today() + ".pdf"); $("sheet").close(); }
     catch (err) { say("Não foi possível gerar o PDF. Tente de novo."); }
-    finally { b.disabled = false; }
+    finally { go.disabled = false; }
   });
 
-  render();
+  (async function boot() {
+    var d = null;
+    try { d = await store.get(); } catch (e) {}
+    try { var ls = localStorage.getItem(LS_KEY); if (ls) { var l = JSON.parse(ls); if (!d || (l.cards || []).length >= (d.cards || []).length) d = l; localStorage.removeItem(LS_KEY); } } catch (e) {}
+    if (d) { try { loadData(d); } catch (e) { recalc(); } } else recalc();
+    render();
+  })();
 })();

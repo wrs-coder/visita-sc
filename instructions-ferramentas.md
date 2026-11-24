@@ -49,3 +49,10 @@ Este arquivo vale só para as ferramentas do site. O aplicativo VisitaSC segue o
   - Um cartão pode ser atualizado importando o S-21 de novo.
   - As anotações ficam ligadas ao resumo de cada grupo, além das anotações gerais.
   - Tocar num nome abre o cartão mês a mês.
+
+### Analisador — regras combinadas (24/11/2026)
+- Inativo: palavra "inativo" em qualquer parte do cartão (ou pasta "Inativos") ou 6+ meses seguidos sem pregar até o último mês com relatório. Fica no grupo "Inativos", fora dos grupos de campo, e volta ao grupo de origem ao recalcular.
+- Perigo de ficar inativo: 4 ou 5 meses seguidos sem pregar (alerta, continua no grupo).
+- Datas de qualquer formato (inclusive por extenso) viram dd/mm/aaaa; data não entendida vira aviso.
+- Resumos só mudam ao tocar "Aplicar mudanças" ou "Recalcular dados". Tudo fica guardado no aparelho; só "Limpar tudo" apaga.
+- Meta dos pioneiros mostra os meses abaixo de 50 h com horas e observação.

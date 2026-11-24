@@ -6,6 +6,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Analisador de congregações</title>
 <meta name="description" content="Analisa os cartões S-21 por grupo de campo para o superintendente de circuito, direto no aparelho.">
+<link rel="manifest" href="/ferramentas/Analisador/manifest.webmanifest">
+<meta name="theme-color" content="#2a5c9e">
+<meta name="apple-mobile-web-app-title" content="Analisador SC">
+<link rel="apple-touch-icon" href="/ferramentas/Analisador/icon-192.png">
+<link rel="icon" href="/ferramentas/Analisador/icon-192.png">
 <link rel="stylesheet" href="/ferramentas/S21_Export/style.css">
 <link rel="stylesheet" href="/ferramentas/Analisador/style.css">
 </head>
@@ -26,6 +31,7 @@
     <p class="muted small">Uma pasta por grupo: o nome da pasta vira o nome do grupo. Também aceita o arquivo do Circuit Manager (.json) e do TSWin (.xml). No computador, pode arrastar tudo para cá.</p>
   </div>
 
+  <div class="recalcrow"><button class="soft" id="recalc">⟳ Recalcular dados</button></div>
   <div class="pillrow tabs" id="tabs" role="tablist" aria-label="Grupos"></div>
 
   <div id="area"></div>
@@ -52,8 +58,8 @@
   </section>
 
   <section class="actions">
-    <button class="primary dl" id="pdf"><b>⬇ Relatório <span>PDF</span></b><small>Resumo, listas e anotações</small></button>
-    <button class="primary dl" id="save"><b>Salvar análise <span>.json</span></b><small>Arquivo para reabrir depois, neste ou em outro aparelho</small></button>
+    <button class="primary dl" id="pdf"><b>⬇ Relatório <span>PDF</span></b><small>Você escolhe o que entra</small></button>
+    <button class="primary dl" id="save"><b>Salvar análise <span>.json</span></b><small>Cópia para outro aparelho. Neste aparelho tudo já fica guardado.</small></button>
     <button class="ghost" id="open">Abrir análise salva</button>
     <button class="ghost danger" id="clear">Limpar tudo</button>
   </section>

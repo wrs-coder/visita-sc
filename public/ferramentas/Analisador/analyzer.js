@@ -57,7 +57,7 @@
       var first = null, baptism = "";
       g.keys.forEach(function (k) { if (!first && shared(g.months[k].m)) first = k; });
       g.cards.forEach(function (p) { if (p.baptism && (!baptism || p === g.main)) baptism = p.baptism; });
-      return { name: fullName(g.main), main: g.main, area: g.main.area, months: g.months, keys: g.keys, firstShared: first, baptism: baptism };
+      return { name: fullName(g.main), main: g.main, cards: g.cards, area: g.main.area, months: g.months, keys: g.keys, firstShared: first, baptism: baptism };
     });
   }
 
@@ -150,8 +150,9 @@
       if (s.length >= 3) name = s[s.length - 2];
       else if (s.length === 2 && !deep[s[0]]) name = s[0];
       var rp = !!name && /pioneir/.test(normName(name));
-      var key = name === null ? "" : rp ? "rp" : normName(name);
-      if (!byKey[key]) { byKey[key] = { key: key, name: name === null ? null : rp ? "Pioneiros regulares" : name.trim(), rp: rp, items: [] }; out.push(byKey[key]); }
+      var ina = !!name && !rp && /inativ/.test(normName(name));
+      var key = name === null ? "" : rp ? "rp" : ina ? "in" : normName(name);
+      if (!byKey[key]) { byKey[key] = { key: key, name: name === null ? null : rp ? "Pioneiros regulares" : ina ? "Inativos" : name.trim(), rp: rp, inactive: ina, items: [] }; out.push(byKey[key]); }
       byKey[key].items.push(i);
     });
     return out;
@@ -214,12 +215,14 @@
       if (start < mine[0]) start = mine[0];
       var span = monthsBetween(start, to), elapsed = last && last >= start ? monthsBetween(start, last) : [];
       var done = elapsed.reduce(function (s, k) { return s + ((h.months[k] && at(k).hours) || 0); }, 0);
+      var low = elapsed.filter(function (k) { return h.months[k] && h.months[k].p.status === "Regular Pioneer" && (at(k).hours || 0) < 50; })
+        .map(function (k) { return { month: k, hours: at(k).hours == null ? null : at(k).hours, comments: String(at(k).comments || "").trim() }; });
       var goalYear = 50 * span.length, goalNow = 50 * elapsed.length, left = span.length - elapsed.length;
       out.push({
         id: h.main.id, name: h.name, area: h.area, start: start, late: start > from,
         months: elapsed.length, done: done, goalYear: goalYear, goalNow: goalNow, diff: done - goalNow,
         avg: elapsed.length ? Math.round(done / elapsed.length * 10) / 10 : 0,
-        need: left > 0 ? Math.max(0, Math.ceil((goalYear - done) / left)) : 0, left: left
+        need: left > 0 ? Math.max(0, Math.ceil((goalYear - done) / left)) : 0, left: left, low: low
       });
     });
     out.sort(function (a, b) { return a.diff - b.diff || a.name.localeCompare(b.name, "pt"); });
@@ -235,7 +238,7 @@
     S().setServiceYear(p, (year - 1) + "/" + year);
     return p;
   }
-  function iso(v) { var m = /^(\d{4}-\d{2}-\d{2})/.exec(String(v || "")); return m ? m[1] : ""; }
+  function iso(v) { return parseDateAny(v); }
   /** rec por mês "aaaa-mm": { hours, studies, aux, rp, remark, any }. Gera um cartão por ano de serviço. */
   function cardsFrom(info, recs) {
     var years = {};
@@ -320,6 +323,60 @@
     return { file: file, people: n, groups: out };
   }
 
+
+  // ---------- datas em qualquer formato ----------
+  var MESES = { jan: 1, fev: 2, feb: 2, mar: 3, abr: 4, apr: 4, mai: 5, may: 5, jun: 6, jul: 7, ago: 8, aug: 8, set: 9, sep: 9, out: 10, oct: 10, nov: 11, dez: 12, dec: 12 };
+  function fullYr(t, now) {
+    var n = +t; if (t.length >= 3) return n;
+    var cur = (now || new Date()).getFullYear() % 100;
+    return n > cur ? 1900 + n : 2000 + n;
+  }
+  function validDate(y, m, d) {
+    if (!(y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31)) return "";
+    var dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCMonth() !== m - 1) return "";
+    return y + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  }
+  /** Qualquer data ("06/05/1986", "6-5-86", "1986-05-06", "06 DE MAIO DE 1986", "6 de mai. 1986") → "aaaa-mm-dd" ou "". */
+  function parseDateAny(v, now) {
+    var s = normName(v == null ? "" : String(v)); if (!s) return "";
+    var m = /^(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})/.exec(s);
+    if (m) return validDate(+m[1], +m[2], +m[3]);
+    m = /^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2,4})$/.exec(s);
+    if (m) return validDate(fullYr(m[3], now), +m[2], +m[1]);
+    m = /^(\d{2})(\d{2})(\d{4})$/.exec(s);
+    if (m) return validDate(+m[3], +m[2], +m[1]);
+    m = /(\d{1,2})\s*(?:de\s+|[\/.\-]\s*)?([a-z]{3,})\.?\s*(?:de\s+|[\/.\-]\s*)?(\d{2,4})\b/.exec(s);
+    if (m && MESES[m[2].slice(0, 3)]) return validDate(fullYr(m[3], now), MESES[m[2].slice(0, 3)], +m[1]);
+    return "";
+  }
+
+  // ---------- inativos ----------
+  var INATIVO = /inativ/;
+  function cardText(p) {
+    var parts = [p.file, p.special, p.inactiveFlag ? "inativo" : ""];
+    (p.months || []).forEach(function (m) { parts.push(m.comments); });
+    (p.notes || []).forEach(function (n) { parts.push(typeof n === "string" ? n : JSON.stringify(n)); });
+    return normName(parts.filter(Boolean).join(" "));
+  }
+  /**
+   * Situação de cada pessoa: inativo (palavra "inativo" no cartão ou 6+ meses seguidos sem pregar)
+   * ou em perigo (4 ou 5 meses seguidos). Contagem termina no último mês com relatório (ou upTo).
+   * Retorna { idDoCartão: { inactive, risk, streak, reason } } para todos os cartões da pessoa.
+   */
+  function inactiveMap(cards, upTo) {
+    var rep = reportedMonths(cards), last = upTo || rep[rep.length - 1], out = {};
+    people(cards).forEach(function (h) {
+      var flag = h.cards.some(function (p) { return INATIVO.test(cardText(p)); });
+      var streak = 0;
+      if (last) for (var k = last; h.months[k] && !shared(h.months[k].m) && !(h.firstShared && k < h.firstShared); k = addMonths(k, -1)) streak++;
+      var inactive = flag || streak >= 6;
+      var info = { inactive: inactive, risk: !inactive && streak >= 4, streak: streak, reason: flag ? "palavra “inativo” no cartão" : streak >= 6 ? streak + " meses seguidos sem pregar" : "" };
+      h.cards.forEach(function (p) { if (p.id != null) out[p.id] = info; });
+    });
+    return out;
+  }
+
   var TILES = [
     { key: "elder", label: "Anciãos" },
     { key: "ms", label: "Servos ministeriais" },
@@ -357,6 +414,6 @@
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml };
+  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
