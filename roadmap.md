@@ -68,4 +68,5 @@
 - [x] Ano de serviço pelo cartão (2026/2027 = 2027), pílulas de ano
 - [x] Grupos em pílulas, Pioneiros reg. à parte, anotações por resumo
 - [x] Trocar cartão (⟳) e reimportar atualiza
-- [ ] Sugestões extras 1-5: aguardando escolha do usuário
+- [x] Importar pastas dos grupos (nome da pasta = grupo)
+- [x] Tocar no nome da lista abre o cartão mês a mês

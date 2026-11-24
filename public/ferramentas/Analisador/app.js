@@ -34,7 +34,7 @@
   }
   function cardKey(p) { return [A.fullName(p).toLowerCase(), p.birth || "", S.serviceYearEnd(p.serviceYear) || p.serviceYear].join("|"); }
 
-  async function addFiles(files, area) {
+  async function readInto(files, area) {
     var bad = [], upd = 0, ok = 0;
     for (var i = 0; i < files.length; i++) {
       try {
@@ -44,6 +44,10 @@
         p.id = uid("c"); p.area = area; state.cards.push(p); ok++;
       } catch (e) { bad.push(files[i].name); }
     }
+    return { bad: bad, upd: upd, ok: ok };
+  }
+  async function addFiles(files, area) {
+    var r = await readInto(files, area), bad = r.bad, upd = r.upd, ok = r.ok;
     if (ok || upd) touch();
     var parts = [];
     if (bad.length) parts.push("Não lidos (sem campos preenchíveis): " + bad.join(", "));
@@ -148,10 +152,118 @@
     var t = A.TILES.filter(function (x) { return x.key === key; })[0], r = analysis(state.active), items = r.lists[key] || [];
     $("sheetTitle").textContent = t.label + " · " + (state.active === "all" ? "Geral" : areaName(state.active)) + " · " + periodLabel();
     $("sheetBody").innerHTML = items.length ? items.map(function (i) {
-      return '<div class="item"><strong>' + esc(i.name) + "</strong><small>" + esc(areaName(i.area)) + "</small><p>" + esc(i.detail) + "</p></div>";
+      return '<button class="item tap" data-person="' + esc(i.id) + '"><strong>' + esc(i.name) + "</strong><small>" + esc(areaName(i.area)) + "</small><p>" + esc(i.detail) + "</p></button>";
     }).join("") : '<p class="muted">Ninguém neste período.</p>';
-    if ($("sheet").showModal) $("sheet").showModal(); else $("sheet").setAttribute("open", "");
+    lastList = key; showSheet();
   }
+  var lastList = null, pending = null;
+  function showSheet() { if ($("sheet").open) return; if ($("sheet").showModal) $("sheet").showModal(); else $("sheet").setAttribute("open", ""); }
+
+  // ---------- cartão da pessoa (só leitura) ----------
+  var ST_PT = { "Regular Pioneer": "Pioneiro regular", "Baptized Publisher": "Publicador batizado", "Unbaptized Publisher": "Publicador não batizado", "Continuous Auxiliary Pioneer": "Pioneiro auxiliar contínuo" };
+  function openPerson(id, year) {
+    var h = A.people(state.cards).filter(function (x) { return x.main.id === id || (x.months && Object.keys(x.months).some(function (k) { return x.months[k].p.id === id; })); })[0];
+    if (!h) return;
+    var cards = state.cards.filter(function (p) { return Object.keys(h.months).some(function (k) { return h.months[k].p === p; }) || p === h.main; });
+    cards.sort(function (a, b) { return (A.cardYear(a) || 0) - (A.cardYear(b) || 0); });
+    var c = cards.filter(function (p) { return A.cardYear(p) === year; })[0] || cards.filter(function (p) { return A.cardYear(p) === state.year; })[0] || cards[cards.length - 1];
+    var p = h.main, role = p.appt === "Elder" ? "Ancião" : p.appt === "MS" ? "Servo ministerial" : "";
+    var dbr = function (iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; };
+    var inP = function (k) { return k && k >= state.period.from && k <= state.period.to; };
+    var rows = c.months.map(function (m, j) {
+      var sh = m.participated || (m.hours || 0) > 0 || (m.studies || 0) > 0, has = m.participated || m.auxiliary || m.studies != null || m.hours != null || m.comments;
+      var miss = inP(m.month) && !sh && A.reportedMonths(state.cards).indexOf(m.month) >= 0;
+      return '<tr class="' + (inP(m.month) ? "inp" : "out") + '"><td>' + (m.month ? A.label(m.month) : S.MONTHS[j].slice(0, 3)) + "</td><td>" + (m.participated ? "✓" : has ? "✗" : "·") + "</td><td>" + (m.studies != null ? esc(m.studies) : "·") + "</td><td>" + (m.auxiliary ? "✓" : "·") + "</td><td>" + (m.hours != null ? esc(m.hours) : "·") + "</td><td>" + (miss ? '<span class="warnc" title="Sem pregar">⚠</span>' : "") + "</td></tr>";
+    }).join("");
+    var obs = c.months.filter(function (m) { return m.comments; }).map(function (m) { return "<li>" + esc((m.month ? A.label(m.month) + ": " : "") + m.comments) + "</li>"; }).join("");
+    $("sheetTitle").textContent = h.name;
+    $("sheetBody").innerHTML = (lastList ? '<button class="back" data-back>‹ Voltar</button>' : "") +
+      '<p class="pmeta">' + esc([areaName(c.area), role, ST_PT[c.status]].filter(Boolean).join(" · ")) + (h.baptism ? "<br>Batismo " + esc(dbr(h.baptism)) : "") + "</p>" +
+      (cards.length > 1 ? '<div class="pillrow">' + cards.map(function (q) { var y = A.cardYear(q); return '<button class="pill" data-pyear="' + y + '" data-pid="' + esc(id) + '" aria-pressed="' + (q === c) + '">Ano ' + (y || "?") + "</button>"; }).join("") + "</div>" : "") +
+      '<table class="view"><thead><tr><th>Mês</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" +
+      (obs ? '<p class="pmeta">Observações</p><ul class="warns">' + obs + "</ul>" : "") +
+      '<div class="sheetbtns"><button class="soft" data-editcard="' + esc(c.id) + '">Editar este cartão</button></div>';
+    showSheet();
+  }
+  $("sheetBody").addEventListener("click", function (e) {
+    var el = e.target;
+    var per = el.closest("[data-person]"); if (per) { openPerson(per.dataset.person); return; }
+    if (el.closest("[data-back]")) { openList(lastList); return; }
+    var py = el.closest("[data-pyear]"); if (py) { openPerson(py.dataset.pid, Number(py.dataset.pyear)); return; }
+    var ed = el.closest("[data-editcard]");
+    if (ed) {
+      var c = state.cards.filter(function (p) { return p.id === ed.dataset.editcard; })[0]; if (!c) return;
+      $("sheet").close(); state.active = c.area; openAreas[c.area] = true; render();
+      var d = document.querySelector('.card[data-id="' + c.id + '"]'); if (d) { d.open = true; d.scrollIntoView({ block: "start", behavior: "smooth" }); }
+      return;
+    }
+    if (el.closest("[data-impcancel]")) { pending = null; $("sheet").close(); return; }
+    if (el.closest("[data-impgo]")) { var g = pending; pending = null; $("sheet").close(); if (g) runImport(g); }
+  });
+
+  // ---------- importar pastas ----------
+  function groupByName(name) { var k = A.normName(name); return state.groups.filter(function (g) { return A.normName(g.name) === k; })[0]; }
+  function previewImport(items) {
+    var groups = A.folderGroups(items);
+    if (!groups.length) { say("Nenhum PDF encontrado nessas pastas."); return; }
+    var fallback = state.active === "all" ? (state.groups[0] && state.groups[0].id) : state.active;
+    pending = groups;
+    $("sheetTitle").textContent = "Conferir antes de importar";
+    lastList = null;
+    $("sheetBody").innerHTML = groups.map(function (g) {
+      var dest = g.rp ? "Pioneiros reg." : g.name === null ? areaName(fallback) + " (grupo aberto)" : groupByName(g.name) ? g.name + " (já existe)" : g.name + " (novo grupo)";
+      return '<div class="imp"><div><strong>' + esc(g.name === null ? "PDFs soltos" : g.name) + "</strong><br><small>→ " + esc(dest) + "</small></div><span>" + g.items.length + " PDF" + (g.items.length === 1 ? "" : "s") + "</span></div>";
+    }).join("") + '<div class="sheetbtns"><button class="ghost" data-impcancel>Cancelar</button><button class="primary" data-impgo>Importar</button></div>';
+    showSheet();
+  }
+  async function runImport(groups) {
+    var fallback = state.active === "all" ? (state.groups[0] && state.groups[0].id) : state.active;
+    var made = 0, tot = { ok: 0, upd: 0, bad: [] };
+    for (var i = 0; i < groups.length; i++) {
+      var g = groups[i], area;
+      if (g.rp) area = "rp";
+      else if (g.name === null) area = fallback;
+      else { var ex = groupByName(g.name); if (!ex) { ex = { id: uid("g"), name: g.name, overseer: "", note: "" }; state.groups.push(ex); made++; } area = ex.id; }
+      var r = await readInto(g.items.map(function (x) { return x.file; }), area);
+      tot.ok += r.ok; tot.upd += r.upd; tot.bad = tot.bad.concat(r.bad);
+    }
+    // grupo inicial vazio e sem nome editado some quando vieram grupos das pastas
+    if (made && state.groups.length > made) state.groups = state.groups.filter(function (g) { return !(g.id === "g1" && g.name === "Grupo 1" && !cardsOf("g1").length && !g.note); });
+    touch(); fixPeriod();
+    var parts = [];
+    if (made) parts.push(made + (made === 1 ? " grupo criado" : " grupos criados"));
+    parts.push(tot.ok + (tot.ok === 1 ? " cartão novo" : " cartões novos"));
+    if (tot.upd) parts.push(tot.upd + (tot.upd === 1 ? " atualizado" : " atualizados"));
+    if (tot.bad.length) parts.push(tot.bad.length + " não lido" + (tot.bad.length === 1 ? "" : "s") + ": " + tot.bad.join(", "));
+    say(parts.join(", ")); render();
+  }
+  $("importFolder").addEventListener("click", function () { $("folderIn").click(); });
+  $("folderIn").addEventListener("change", function (e) {
+    var items = Array.from(e.target.files).map(function (f) { return { path: f.webkitRelativePath || f.name, file: f }; }); e.target.value = "";
+    previewImport(items);
+  });
+  if (!("webkitdirectory" in document.createElement("input"))) {
+    $("folderBox").querySelector("p").textContent = "Este aparelho não deixa escolher pastas inteiras. Use “⬆ Importar S-21” em cada grupo.";
+    $("importFolder").disabled = true;
+  }
+  function readEntry(entry, path, out) {
+    return new Promise(function (res) {
+      if (entry.isFile) entry.file(function (f) { out.push({ path: path + f.name, file: f }); res(); }, function () { res(); });
+      else if (entry.isDirectory) {
+        var rd = entry.createReader(), all = [];
+        (function more() { rd.readEntries(function (ents) { if (!ents.length) { Promise.all(all.map(function (en) { return readEntry(en, path + entry.name + "/", out); })).then(res); return; } all = all.concat(Array.from(ents)); more(); }, function () { res(); }); })();
+      } else res();
+    });
+  }
+  ["dragenter", "dragover"].forEach(function (t) { document.addEventListener(t, function (e) { if (e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf("Files") >= 0) { e.preventDefault(); $("folderBox").classList.add("drag"); } }); });
+  document.addEventListener("dragleave", function (e) { if (!e.relatedTarget) $("folderBox").classList.remove("drag"); });
+  document.addEventListener("drop", async function (e) {
+    if (!e.dataTransfer) return; e.preventDefault(); $("folderBox").classList.remove("drag");
+    var entries = Array.from(e.dataTransfer.items || []).map(function (it) { return it.webkitGetAsEntry && it.webkitGetAsEntry(); }).filter(Boolean), out = [];
+    if (entries.length) await Promise.all(entries.map(function (en) { return readEntry(en, "", out); }));
+    else Array.from(e.dataTransfer.files).forEach(function (f) { out.push({ path: f.name, file: f }); });
+    previewImport(out);
+  });
 
   // ---------- anotações (da pílula ativa) ----------
   function noteOf(id) { if (id === "all") return state.notes; if (id === "rp") return state.pioneersNote; var g = state.groups.filter(function (x) { return x.id === id; })[0]; return g ? g.note : ""; }

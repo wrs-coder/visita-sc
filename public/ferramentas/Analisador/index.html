@@ -20,6 +20,11 @@
 
   <p class="msg" id="msg" role="status" hidden></p>
 
+  <div class="folderbox" id="folderBox">
+    <button class="soft" id="importFolder">📁 Importar pastas dos grupos</button>
+    <p class="muted small">Uma pasta por grupo: o nome da pasta vira o nome do grupo. No computador, também pode arrastar as pastas para cá.</p>
+  </div>
+
   <div class="pillrow tabs" id="tabs" role="tablist" aria-label="Grupos"></div>
 
   <div id="area"></div>
@@ -42,6 +47,7 @@
   </section>
 
   <input type="file" id="pdfs" accept="application/pdf,.pdf" multiple hidden>
+  <input type="file" id="folderIn" webkitdirectory directory multiple hidden>
   <input type="file" id="pdfOne" accept="application/pdf,.pdf" hidden>
   <input type="file" id="openFile" accept="application/json,.json" hidden>
 </main>

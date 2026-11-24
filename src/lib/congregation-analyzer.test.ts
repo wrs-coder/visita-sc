@@ -127,3 +127,19 @@ describe("Analisador de congregações", () => {
     expect(A.analyze(cards, { ...P, area: "all" }).counts["bap"]).toBe(2);
   });
 });
+
+describe("Analisador: importar pastas", () => {
+  const F = (an && "folderGroups" in an ? an : g["Analisador"]) as { folderGroups: (i: { path: string }[]) => { key: string; name: string | null; rp: boolean; items: unknown[] }[] };
+  it("pasta-mãe vira o grupo; pioneiros à parte; PDFs soltos para o grupo aberto", () => {
+    const r = F.folderGroups([{ path: "Cong/Grupo 1/a.pdf" }, { path: "Cong/Pioneiros/b.pdf" }, { path: "Cong/c.pdf" }, { path: "Cong/Grupo 1/x.txt" }]);
+    expect(r.map((x) => [x.name, x.rp, x.items.length])).toEqual([["Grupo 1", false, 1], ["Pioneiros regulares", true, 1], [null, false, 1]]);
+  });
+  it("mesmo nome com acento/maiúscula diferente = mesmo grupo", () => {
+    const r = F.folderGroups([{ path: "A/Grupo São José/a.pdf" }, { path: "B/grupo sao jose/b.pdf" }]);
+    expect(r).toHaveLength(1);
+    expect(r[0]?.items).toHaveLength(2);
+  });
+  it("escolher só a pasta do grupo: o nome dela vira o grupo", () => {
+    expect(F.folderGroups([{ path: "Grupo 2/a.pdf" }])[0]?.name).toBe("Grupo 2");
+  });
+});

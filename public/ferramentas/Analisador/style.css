@@ -43,3 +43,20 @@ dialog#sheet::backdrop{background:rgb(0 0 0 / .4)}
 .pill small{font-weight:400;opacity:.8;margin-left:4px}
 .cardtools{display:flex;gap:8px;margin-top:10px}
 .cardtools button{flex:1}
+
+.folderbox{background:var(--card);border-radius:16px;padding:12px 14px;margin-top:12px;border:2px dashed transparent}
+.folderbox .soft{width:100%}
+.folderbox.drag{border-color:var(--accent)}
+.imp{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.imp small{color:var(--muted)}
+.sheetbtns{display:flex;gap:8px;margin-top:14px}.sheetbtns button{flex:1}
+.item.tap{cursor:pointer;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);font:inherit;color:inherit;padding:10px 0}
+.item.tap strong::after{content:" ›";color:var(--accent)}
+.pmeta{color:var(--muted);font-size:14px;margin:6px 0}
+table.view{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+table.view th,table.view td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--line)}
+table.view td:first-child,table.view th:first-child{text-align:left}
+table.view tr.inp td{background:var(--bg)}
+table.view tr.out td{opacity:.5}
+.warnc{color:var(--warn);font-weight:700}
+.back{background:var(--bg);color:var(--accent);min-height:40px;padding:0 12px;border-radius:20px;font-weight:600}

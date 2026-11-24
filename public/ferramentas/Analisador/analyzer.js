@@ -70,7 +70,7 @@
 
     people(cards).forEach(function (h) {
       if (opts.area && opts.area !== "all" && h.area !== opts.area) return;
-      var p = h.main, base = { name: h.name, area: h.area };
+      var p = h.main, base = { id: p.id, name: h.name, area: h.area };
       var unbap = p.status === "Unbaptized Publisher" && !h.baptism;
       if (p.appt === "Elder") c.elder++;
       if (p.appt === "MS") c.ms++;
@@ -126,6 +126,30 @@
     };
   }
 
+  /** Nome comparável: sem acento, minúsculo, espaços únicos. */
+  function normName(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim(); }
+  /**
+   * Arquivos de pastas → grupos. items: [{ path: "Cong/Grupo 1/a.pdf", ... }].
+   * Grupo = pasta-mãe do PDF; pasta com "pioneiro" → "rp"; PDF solto (sem subpasta quando a raiz tem subpastas, ou sem pasta) → null (grupo aberto).
+   * Retorna [{ key, name, rp, items }] na ordem em que aparecem.
+   */
+  function folderGroups(items) {
+    var pdf = items.filter(function (i) { return /\.pdf$/i.test(i.path || ""); });
+    var deep = {};
+    pdf.forEach(function (i) { var s = i.path.split("/").filter(Boolean); if (s.length >= 3) deep[s[0]] = true; });
+    var out = [], byKey = {};
+    pdf.forEach(function (i) {
+      var s = i.path.split("/").filter(Boolean), name = null;
+      if (s.length >= 3) name = s[s.length - 2];
+      else if (s.length === 2 && !deep[s[0]]) name = s[0];
+      var rp = !!name && /pioneir/.test(normName(name));
+      var key = name === null ? "" : rp ? "rp" : normName(name);
+      if (!byKey[key]) { byKey[key] = { key: key, name: name === null ? null : rp ? "Pioneiros regulares" : name.trim(), rp: rp, items: [] }; out.push(byKey[key]); }
+      byKey[key].items.push(i);
+    });
+    return out;
+  }
+
   var TILES = [
     { key: "elder", label: "Anciãos" },
     { key: "ms", label: "Servos ministeriais" },
@@ -145,6 +169,6 @@
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, people: people, analyze: analyze, fullName: fullName };
+  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
