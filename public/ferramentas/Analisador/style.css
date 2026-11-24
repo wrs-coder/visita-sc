@@ -117,3 +117,4 @@ table.view tr.out td{opacity:.5}
 .prcand .pritem{display:flex;flex-direction:column;gap:6px;padding:6px 0;border-top:1px solid var(--line)}
 .prcand .practs{display:flex;flex-wrap:wrap;gap:6px}
 .pendbar.okbar span{font-weight:600}
+.sechead .secbtn{flex:0 0 auto;min-height:36px;padding:6px 14px;border-radius:999px;font-size:13px}

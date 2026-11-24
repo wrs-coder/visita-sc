@@ -344,6 +344,8 @@
     $("sumTitle").textContent = "Resumo — " + (state.active === "all" ? "Geral (toda a congregação)" : areaName(state.active));
     $("rule").innerHTML = A.STUDY_RULES.map(function (r) { return '<option value="' + r.key + '"' + (r.key === state.studyRule ? " selected" : "") + ">" + esc(r.label) + "</option>"; }).join("");
     $("rule").closest("label").hidden = state.active === "in";
+    var ab = $("areaPdf"); ab.hidden = state.active === "in";
+    ab.textContent = state.active === "all" ? "📄 PDF dos grupos" : state.active === "rp" ? "📄 PDF dos pioneiros" : "📄 PDF deste grupo";
     if (!state.cards.length) return;
     var r = analysis(state.active);
     $("tiles").innerHTML = tilesFor().map(function (t) {
@@ -750,7 +752,6 @@
     page.drawText(fit(state.congregation || "Congregação", font, 15, W - 2 * M), { x: M, y: H - 84, size: 15, font: font, color: white });
     page.drawText(pdfSafe("Período: " + periodLabel() + " · " + general.months.length + " meses com relatório"), { x: M, y: H - 104, size: 10, font: font, color: white });
     y = H - 140;
-    text("Gerado em " + today().split("-").reverse().join("/") + " pelo Analisador de congregações. Dados lidos dos cartões S-21.", { color: grey });
     text("Quem conta como “Dirige estudos”: " + (rl ? rl.label.toLowerCase() : ""), { color: grey, gap: 8 });
 
     function summaryTable(scopes) {
@@ -877,6 +878,110 @@
     try { localStorage.setItem("analisador.pdfParts", JSON.stringify(o)); } catch (err) {}
     go.disabled = true;
     try { download(new Blob([await buildPdf(o)], { type: "application/pdf" }), "analise-" + slug(state.congregation) + "-" + today() + ".pdf"); $("sheet").close(); }
+    catch (err) { say("Não foi possível gerar o PDF. Tente de novo."); }
+    finally { go.disabled = false; }
+  });
+
+  // ---------- PDF por grupo / pioneiros (uma página por área, sem nome da ferramenta) ----------
+  function totalsSecs(id) { return A.TOTAL_SECTIONS.filter(function (s) { return id === "rp" ? s.key === "rp" : s.key !== "rp"; }); }
+  async function buildAreaPdf(ids, withNotes) {
+    var doc = await PDFLib.PDFDocument.create();
+    var font = await doc.embedFont(PDFLib.StandardFonts.Helvetica), bold = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    var W = 595.28, H = 841.89, M = 40, page, y, cur = "";
+    var grey = PDFLib.rgb(0.42, 0.42, 0.45), ink = PDFLib.rgb(0.1, 0.1, 0.12), line = PDFLib.rgb(0.86, 0.86, 0.89);
+    var accent = PDFLib.rgb(0.16, 0.36, 0.62), soft = PDFLib.rgb(0.95, 0.96, 0.98), white = PDFLib.rgb(1, 1, 1);
+    var labels = [];
+    function fit(t, f, z, w) { t = pdfSafe(t); while (t.length > 1 && f.widthOfTextAtSize(t, z) > w) t = t.slice(0, -1); return t; }
+    function wrap(t, f, z, w) {
+      var out = [];
+      pdfSafe(t).split("\n").forEach(function (para) { var c = ""; para.split(/\s+/).forEach(function (wd) { var x = c ? c + " " + wd : wd; if (f.widthOfTextAtSize(x, z) <= w) c = x; else { if (c) out.push(c); c = fit(wd, f, z, w); } }); out.push(c); });
+      return out;
+    }
+    function header(title, cont) {
+      page = doc.addPage([W, H]); labels.push(cur);
+      page.drawRectangle({ x: 0, y: H - 78, width: W, height: 78, color: accent });
+      page.drawText(fit(state.congregation || "Congregação", bold, 16, W - 2 * M), { x: M, y: H - 34, size: 16, font: bold, color: white });
+      page.drawText(fit("Resumo — " + title + (cont ? " (continuação)" : "") + (periodLabel() ? " · Período: " + periodLabel() : ""), font, 10.5, W - 2 * M), { x: M, y: H - 56, size: 10.5, font: font, color: white });
+      y = H - 100;
+    }
+    function need(h, title) { if (y - h < M + 20) header(title, true); }
+    function sec(t, title) { need(30, title); page.drawText(pdfSafe(t.toUpperCase()), { x: M, y: y - 11, size: 10, font: bold, color: accent }); y -= 20; }
+    ids.forEach(function (id) {
+      var title = areaName(id); cur = title; header(title);
+      var r = analysis(id), tiles = id === "rp" ? A.RP_TILES : A.TILES;
+      sec("Resumo", title);
+      var cols = 4, gap = 8, tw = (W - 2 * M - gap * (cols - 1)) / cols, th = 50;
+      tiles.forEach(function (t, i) {
+        var cx = i % cols; if (cx === 0) { if (i) y -= th + gap; need(th, title); }
+        var x = M + cx * (tw + gap);
+        page.drawRectangle({ x: x, y: y - th, width: tw, height: th, color: soft, borderColor: line, borderWidth: 0.6 });
+        page.drawText(String(r.counts[t.key]), { x: x + 8, y: y - 20, size: 15, font: bold, color: ink });
+        wrap(t.label, font, 8, tw - 14).slice(0, 2).forEach(function (l, k) { page.drawText(l, { x: x + 8, y: y - 32 - k * 9, size: 8, font: font, color: grey }); });
+      });
+      y -= th + 18;
+      var tt = A.monthlyTotals(view, { from: state.period.from, to: state.period.to, area: id });
+      if (tt.months.length) {
+        sec("Totais mensais", title);
+        for (var a = 0; a < tt.months.length; a += 6) {
+          var ms = tt.months.slice(a, a + 6), last = a + 6 >= tt.months.length, lw = 160, nc = ms.length + (last ? 1 : 0), cw = (W - 2 * M - lw) / nc;
+          need(40, title);
+          page.drawRectangle({ x: M, y: y - 18, width: W - 2 * M, height: 18, color: accent });
+          ms.forEach(function (k, j) { page.drawText(pdfSafe(A.label(k)), { x: M + lw + j * cw + 4, y: y - 12.5, size: 8.5, font: bold, color: white }); });
+          if (last) page.drawText("Total", { x: M + lw + ms.length * cw + 4, y: y - 12.5, size: 8.5, font: bold, color: white });
+          y -= 20;
+          totalsSecs(id).forEach(function (s) {
+            need(16, title); page.drawText(pdfSafe(s.label), { x: M + 4, y: y - 10, size: 9, font: bold, color: accent }); y -= 15;
+            s.rows.forEach(function (rw, n) {
+              need(16, title);
+              if (n % 2 === 0) page.drawRectangle({ x: M, y: y - 12, width: W - 2 * M, height: 15, color: soft });
+              page.drawText(fit(rw[1], font, 9, lw - 14), { x: M + 12, y: y - 9, size: 9, font: font, color: ink });
+              ms.forEach(function (k, j) { page.drawText(String(Math.round(tt.rows[k][rw[0]] * 10) / 10), { x: M + lw + j * cw + 4, y: y - 9, size: 9, font: font, color: ink }); });
+              if (last && !/Reported$/.test(rw[0])) { var sum = tt.months.reduce(function (q, k) { return q + tt.rows[k][rw[0]]; }, 0); page.drawText(String(Math.round(sum * 10) / 10), { x: M + lw + ms.length * cw + 4, y: y - 9, size: 9, font: bold, color: ink }); }
+              y -= 15;
+            });
+          });
+          y -= 12;
+        }
+      }
+      var note = (noteOf(id) || "").trim();
+      if (withNotes && note) {
+        sec("Anotações", title);
+        wrap(note, font, 10, W - 2 * M - 16).forEach(function (l) { need(14, title); page.drawText(l, { x: M + 8, y: y - 10, size: 10, font: font, color: ink }); y -= 14; });
+      }
+    });
+    var pages = doc.getPages();
+    pages.forEach(function (pg, k) {
+      pg.drawLine({ start: { x: M, y: 30 }, end: { x: W - M, y: 30 }, thickness: 0.5, color: line });
+      pg.drawText(fit((state.congregation ? state.congregation + " · " : "") + labels[k], font, 8, 380), { x: M, y: 18, size: 8, font: font, color: grey });
+      pg.drawText("Página " + (k + 1) + " de " + pages.length, { x: W - M - 70, y: 18, size: 8, font: font, color: grey });
+    });
+    return doc.save();
+  }
+  function openAreaPdf(id) {
+    if (!state.cards.length) { say("Adicione cartões antes de gerar o PDF."); return; }
+    lastList = null;
+    var multi = id === "all", body;
+    if (multi) {
+      $("sheetTitle").textContent = "PDF dos grupos";
+      body = '<p class="muted small">Cada item sai em uma página separada, no mesmo arquivo.</p>' +
+        areas().filter(function (a) { return a.id !== "in"; }).map(function (a) { return '<label class="chk"><input type="checkbox" data-apdf="' + esc(a.id) + '" checked> ' + esc(a.name) + "</label>"; }).join("");
+    } else {
+      $("sheetTitle").textContent = "PDF — " + areaName(id);
+      body = '<p class="muted small">Resumo e totais mensais ' + (id === "rp" ? "dos pioneiros regulares." : "deste grupo.") + '</p><input type="hidden" data-apdf="' + esc(id) + '">';
+    }
+    $("sheetBody").innerHTML = body + '<label class="chk"><input type="checkbox" data-apnotes checked> Incluir anotações</label>' +
+      '<div class="sheetbtns"><button class="ghost" data-pdfcancel>Cancelar</button><button class="primary" data-apgo>⬇ Gerar PDF</button></div>';
+    showSheet();
+  }
+  $("areaPdf").addEventListener("click", function () { openAreaPdf(state.active); });
+  $("groupsPdf").addEventListener("click", function () { openAreaPdf("all"); });
+  $("sheetBody").addEventListener("click", async function (e) {
+    var go = e.target.closest("[data-apgo]"); if (!go) return;
+    var ids = []; $("sheetBody").querySelectorAll("[data-apdf]").forEach(function (c) { if (c.type === "hidden" || c.checked) ids.push(c.dataset.apdf); });
+    if (!ids.length) { say("Marque pelo menos um grupo."); return; }
+    var notes = $("sheetBody").querySelector("[data-apnotes]").checked;
+    go.disabled = true;
+    try { download(new Blob([await buildAreaPdf(ids, notes)], { type: "application/pdf" }), "resumo-" + slug(ids.length === 1 ? areaName(ids[0]) : "grupos") + "-" + slug(state.congregation) + "-" + today() + ".pdf"); $("sheet").close(); }
     catch (err) { say("Não foi possível gerar o PDF. Tente de novo."); }
     finally { go.disabled = false; }
   });
