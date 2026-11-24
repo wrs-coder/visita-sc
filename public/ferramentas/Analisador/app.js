@@ -180,7 +180,7 @@
     if (!h) return;
     var cards = state.cards.filter(function (p) { return Object.keys(h.months).some(function (k) { return h.months[k].p === p; }) || p === h.main; });
     cards.sort(function (a, b) { return (A.cardYear(a) || 0) - (A.cardYear(b) || 0); });
-    var c = cards.filter(function (p) { return A.cardYear(p) === year; })[0] || cards.filter(function (p) { return A.cardYear(p) === state.year; })[0] || cards[cards.length - 1];
+    var c = cards.filter(function (p) { return A.cardYear(p) === year; })[0] || cards.filter(function (p) { return A.cardYear(p) === A.yearOfMonth(state.period.to); })[0] || cards[cards.length - 1];
     var p = h.main, role = p.appt === "Elder" ? "Ancião" : p.appt === "MS" ? "Servo ministerial" : "";
     var dbr = function (iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; };
     var inP = function (k) { return k && k >= state.period.from && k <= state.period.to; };
