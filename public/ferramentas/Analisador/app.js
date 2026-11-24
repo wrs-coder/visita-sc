@@ -6,7 +6,7 @@
   function uid(prefix) { seq++; return prefix + Date.now().toString(36) + seq; }
 
   var state = blank(), dirty = false, addTo = null, replaceId = null, openAreas = {};
-  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, preset: "6m", active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", cards: [] }; }
+  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, preset: "6m", active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", done: {}, cards: [] }; }
   function touch() { dirty = true; }
 
   function areaName(id) {
@@ -14,7 +14,7 @@
     var g = state.groups.filter(function (x) { return x.id === id; })[0];
     return g ? (g.name || "Grupo sem nome") : "";
   }
-  function areas() { return state.groups.map(function (g) { return { id: g.id, name: g.name || "Grupo sem nome" }; }).concat([{ id: "rp", name: "Pioneiros regulares" }]); }
+  function areas() { return A.sortGroups(state.groups).map(function (g) { return { id: g.id, name: g.name || "Grupo sem nome" }; }).concat([{ id: "rp", name: "Pioneiros regulares" }]); }
   function cardsOf(id) { return state.cards.filter(function (p) { return p.area === id; }); }
   function say(text) { $("msg").textContent = text || ""; $("msg").hidden = !text; }
 
@@ -34,19 +34,31 @@
   }
   function cardKey(p) { return [A.fullName(p).toLowerCase(), p.birth || "", S.serviceYearEnd(p.serviceYear) || p.serviceYear].join("|"); }
 
+  /** Coloca um cartão lido: se a mesma pessoa e o mesmo ano já existem, atualiza. */
+  function placeCard(p, area) {
+    var old = state.cards.filter(function (q) { return cardKey(q) === cardKey(p); })[0];
+    if (old) { p.id = old.id; p.area = old.area; state.cards[state.cards.indexOf(old)] = p; return "upd"; }
+    p.id = uid("c"); p.area = area; state.cards.push(p); return "ok";
+  }
   async function readInto(files, area) {
     var bad = [], upd = 0, ok = 0;
     for (var i = 0; i < files.length; i++) {
       try {
-        var p = await readPdf(files[i]);
-        var old = state.cards.filter(function (q) { return cardKey(q) === cardKey(p); })[0];
-        if (old) { p.id = old.id; p.area = old.area; state.cards[state.cards.indexOf(old)] = p; upd++; continue; }
-        p.id = uid("c"); p.area = area; state.cards.push(p); ok++;
+        if (placeCard(await readPdf(files[i]), area) === "upd") upd++; else ok++;
       } catch (e) { bad.push(files[i].name); }
     }
     return { bad: bad, upd: upd, ok: ok };
   }
+  function isData(name) { return /\.(json|xml)$/i.test(name || ""); }
+  /** Lê .json (Circuit Manager) ou .xml (TSWin) → grupos com cartões prontos. */
+  async function readData(file) {
+    var text = await file.text();
+    if (/\.xml$/i.test(file.name)) return A.fromTswinXml(text, file.name);
+    return A.fromCircuitJson(JSON.parse(text), file.name);
+  }
   async function addFiles(files, area) {
+    var data = files.filter(function (f) { return isData(f.name); });
+    if (data.length) { previewImport(files.map(function (f) { return { path: f.name, file: f }; }), area); return; }
     var r = await readInto(files, area), bad = r.bad, upd = r.upd, ok = r.ok;
     if (ok || upd) touch();
     var parts = [];
@@ -145,7 +157,55 @@
       '<span class="count">' + count + "</span></div>" +
       '<div class="arow"><button class="soft" data-add>⬆ Importar S-21</button><button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
       '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? list.map(cardHtml).join("") : "") + "</div>" +
+      doneHtml(id) +
       (g && state.groups.length > 1 ? '<button class="rmgroup" data-delgroup>Remover grupo</button>' : "") + "</div>";
+  }
+
+  function doneHtml(id) {
+    var d = state.done[id];
+    if (d) return '<div class="donebar"><span>✓ Analisado em ' + esc(d.slice(8, 10) + "/" + d.slice(5, 7)) + '</span><button class="link" data-reopen>Reabrir</button></div>';
+    return '<button class="primary finish" data-finish>✓ Encerrar análise ' + (id === "rp" ? "dos pioneiros" : "do grupo") + "</button>";
+  }
+
+  // ---------- totais mensais ----------
+  function renderTotals() {
+    var box = $("totalsBox");
+    if (!state.cards.length) { box.hidden = true; return; }
+    var t = A.monthlyTotals(state.cards, { from: state.period.from, to: state.period.to, area: state.active });
+    box.hidden = !t.months.length; if (!t.months.length) return;
+    var secs = A.TOTAL_SECTIONS.filter(function (s) { return state.active === "rp" ? s.key === "rp" : state.active === "all" ? true : s.key !== "rp"; });
+    var head = "<tr><th></th>" + t.months.map(function (k) { return "<th>" + A.label(k).replace(/ \d\d(\d\d)$/, " $1") + "</th>"; }).join("") + "<th>Total</th></tr>";
+    var body = secs.map(function (s) {
+      return '<tr class="sec"><th colspan="' + (t.months.length + 2) + '">' + esc(s.label) + "</th></tr>" + s.rows.map(function (r) {
+        var vals = t.months.map(function (k) { return t.rows[k][r[0]]; });
+        var sum = vals.reduce(function (a, b) { return a + b; }, 0);
+        var tot = /Reported$/.test(r[0]) ? "" : String(Math.round(sum * 10) / 10);
+        return "<tr><th>" + esc(r[1]) + "</th>" + vals.map(function (v) { return "<td>" + (Math.round(v * 10) / 10) + "</td>"; }).join("") + "<td><b>" + tot + "</b></td></tr>";
+      }).join("");
+    }).join("");
+    $("totalsTable").innerHTML = "<thead>" + head + "</thead><tbody>" + body + "</tbody>";
+    $("totalsTitle").textContent = "Totais mensais — " + (state.active === "all" ? "Geral" : areaName(state.active));
+  }
+
+  // ---------- pioneiros regulares: meta anual ----------
+  function rpYear() { return state.preset === "year" && state.year ? state.year : A.yearOfMonth(state.period.to); }
+  function hrs(n) { return (Math.round(n * 10) / 10).toString().replace(".", ",") + " h"; }
+  function rpRows(r) {
+    return r.list.map(function (x) {
+      var cls = x.diff < 0 ? "warn" : "ok", sign = x.diff < 0 ? "⚠ −" + hrs(-x.diff) : "✓ +" + hrs(x.diff);
+      return '<button class="item tap goal" data-person="' + esc(x.id) + '"><div class="gtop"><strong>' + esc(x.name) + (x.late ? ' <small>(iniciou em ' + esc(A.label(x.start)) + ")</small>" : "") + '</strong><span class="badge ' + cls + '">' + sign + "</span></div>" +
+        "<p>Feitas " + hrs(x.done) + " · Meta até agora " + hrs(x.goalNow) + (x.late ? " · Meta do ano " + hrs(x.goalYear) + " (" + (x.goalYear / 50) + " meses × 50)" : "") + "</p>" +
+        "<p>Média " + hrs(x.avg) + "/mês" + (x.left ? " · precisa " + hrs(x.need) + "/mês até agosto" : "") + "</p></button>";
+    }).join("");
+  }
+  function renderGoals() {
+    var box = $("rpBox");
+    var y = rpYear();
+    if (state.active !== "rp" || !y) { box.hidden = true; return; }
+    var r = A.pioneerYear(state.cards, y);
+    box.hidden = false;
+    $("rpHead").textContent = "Ano de serviço " + y + " (set/" + (y - 1) + " a ago/" + y + ")" + (r.upTo ? " · até " + A.label(r.upTo) + ": meta " + hrs(50 * A.monthsBetween((y - 1) + "-09", r.upTo).length) : "");
+    $("rpList").innerHTML = r.list.length ? rpRows(r) : '<p class="muted">Nenhum pioneiro regular com cartão deste ano.</p>';
   }
 
   // ---------- resumo ----------
@@ -217,28 +277,41 @@
 
   // ---------- importar pastas ----------
   function groupByName(name) { var k = A.normName(name); return state.groups.filter(function (g) { return A.normName(g.name) === k; })[0]; }
-  function previewImport(items) {
-    var groups = A.folderGroups(items);
-    if (!groups.length) { say("Nenhum PDF encontrado nessas pastas."); return; }
-    var fallback = state.active === "all" ? (state.groups[0] && state.groups[0].id) : state.active;
+  function defaultArea() { return state.active === "all" || state.active === "rp" ? (A.sortGroups(state.groups)[0] && A.sortGroups(state.groups)[0].id) : state.active; }
+  var importArea = null;
+  async function previewImport(items, area) {
+    var groups = A.folderGroups(items), bad = [];
+    var data = items.filter(function (i) { return isData(i.path); });
+    for (var d = 0; d < data.length; d++) {
+      try {
+        var r = await readData(data[d].file);
+        r.groups.forEach(function (g) { var ex = groups.filter(function (x) { return x.key === g.key && x.cards; })[0]; if (ex) ex.cards = ex.cards.concat(g.cards); else groups.push({ key: g.key, name: g.name, rp: g.rp, cards: g.cards, items: [], src: r.file }); });
+      } catch (e) { bad.push(data[d].file.name); }
+    }
+    if (bad.length) say("Arquivo não reconhecido (use .json do Circuit Manager ou .xml do TSWin): " + bad.join(", "));
+    if (!groups.length) { if (!bad.length) say("Nenhum PDF, .json ou .xml encontrado."); return; }
+    importArea = area || null;
+    var fallback = importArea || defaultArea();
     pending = groups;
     $("sheetTitle").textContent = "Conferir antes de importar";
     lastList = null;
     $("sheetBody").innerHTML = groups.map(function (g) {
       var dest = g.rp ? "Pioneiros reg." : g.name === null ? areaName(fallback) + " (grupo aberto)" : groupByName(g.name) ? g.name + " (já existe)" : g.name + " (novo grupo)";
-      return '<div class="imp"><div><strong>' + esc(g.name === null ? "PDFs soltos" : g.name) + "</strong><br><small>→ " + esc(dest) + "</small></div><span>" + g.items.length + " PDF" + (g.items.length === 1 ? "" : "s") + "</span></div>";
+      var n = g.cards ? g.cards.length : g.items.length, unit = g.cards ? (n === 1 ? " cartão" : " cartões") : (n === 1 ? " PDF" : " PDFs");
+      return '<div class="imp"><div><strong>' + esc(g.name === null ? (g.cards ? "Sem grupo no arquivo" : "PDFs soltos") : g.name) + "</strong><br><small>→ " + esc(dest) + "</small></div><span>" + n + unit + "</span></div>";
     }).join("") + '<div class="sheetbtns"><button class="ghost" data-impcancel>Cancelar</button><button class="primary" data-impgo>Importar</button></div>';
     showSheet();
   }
   async function runImport(groups) {
-    var fallback = state.active === "all" ? (state.groups[0] && state.groups[0].id) : state.active;
+    var fallback = importArea || defaultArea();
     var made = 0, tot = { ok: 0, upd: 0, bad: [] };
     for (var i = 0; i < groups.length; i++) {
       var g = groups[i], area;
       if (g.rp) area = "rp";
       else if (g.name === null) area = fallback;
       else { var ex = groupByName(g.name); if (!ex) { ex = { id: uid("g"), name: g.name, overseer: "", note: "" }; state.groups.push(ex); made++; } area = ex.id; }
-      var r = await readInto(g.items.map(function (x) { return x.file; }), area);
+      var r = g.cards ? { ok: 0, upd: 0, bad: [] } : await readInto(g.items.map(function (x) { return x.file; }), area);
+      if (g.cards) g.cards.forEach(function (c) { if (placeCard(c, area) === "upd") r.upd++; else r.ok++; });
       tot.ok += r.ok; tot.upd += r.upd; tot.bad = tot.bad.concat(r.bad);
     }
     // grupo inicial vazio e sem nome editado some quando vieram grupos das pastas
@@ -290,7 +363,7 @@
     if (!tabs.some(function (t) { return t.id === state.active; })) state.active = "all";
     $("tabs").innerHTML = tabs.map(function (t) {
       var n = t.id === "all" ? state.cards.length : cardsOf(t.id).length;
-      return '<button class="pill" role="tab" data-tab="' + t.id + '" aria-selected="' + (t.id === state.active) + '">' + esc(t.id === "rp" ? "Pioneiros reg." : t.name) + "<small>" + n + "</small></button>";
+      return '<button class="pill" role="tab" data-tab="' + t.id + '" aria-selected="' + (t.id === state.active) + '">' + (state.done[t.id] ? '<i class="done" aria-label="analisado">✓</i>' : "") + esc(t.id === "rp" ? "Pioneiros reg." : t.name) + "<small>" + n + "</small></button>";
     }).join("") + '<button class="pill add" data-addgroup>+ Grupo</button>';
   }
 
@@ -303,6 +376,8 @@
     $("area").innerHTML = state.active === "all" ? "" : areaHtml(state.active, g || null);
     openCards.forEach(function (id) { var d = document.querySelector('.card[data-id="' + id + '"]'); if (d) d.open = true; });
     renderSummary();
+    renderTotals();
+    renderGoals();
     renderNotes();
   }
 
@@ -327,6 +402,9 @@
     var b = e.target.closest("[data-tab]"); if (b) { state.active = b.dataset.tab; render(); }
   });
   $("rule").addEventListener("change", function (e) { state.studyRule = e.target.value; touch(); renderSummary(); });
+  $("rpList").addEventListener("click", function (e) { var b = e.target.closest("[data-person]"); if (b) { lastList = null; openPerson(b.dataset.person); } });
+  $("importData").addEventListener("click", function () { $("dataIn").click(); });
+  $("dataIn").addEventListener("change", function (e) { var items = Array.from(e.target.files).map(function (f) { return { path: f.name, file: f }; }); e.target.value = ""; if (items.length) previewImport(items); });
   $("tiles").addEventListener("click", function (e) { var b = e.target.closest("[data-tile]"); if (b) openList(b.dataset.tile); });
   $("sheetClose").addEventListener("click", function () { $("sheet").close(); });
   $("sheet").addEventListener("click", function (e) { if (e.target === $("sheet")) $("sheet").close(); });
@@ -342,6 +420,8 @@
     var el = e.target, id = areaOf(el); if (!id) return;
     if (e.type === "click") {
       if (el.closest("[data-add]")) { addTo = id; $("pdfs").click(); return; }
+      if (el.closest("[data-finish]")) { state.done[id] = today(); touch(); render(); return; }
+      if (el.closest("[data-reopen]")) { delete state.done[id]; touch(); render(); return; }
       if (el.closest("[data-view]")) { openAreas[id] = !openAreas[id]; render(); return; }
       if (el.closest("[data-delgroup]")) {
         var n = cardsOf(id).length;
@@ -370,7 +450,7 @@
       if (el.type === "checkbox") m[k] = el.checked;
       else if (k === "comments") m[k] = el.value.trim();
       else { var num = Number(el.value.replace(",", ".")); m[k] = el.value.trim() && isFinite(num) ? num : null; }
-      renderSummary(); renderPeriod();
+      renderSummary(); renderTotals(); renderGoals(); renderPeriod();
     }
   }
   $("area").addEventListener("click", onAreas); $("area").addEventListener("change", onAreas);
@@ -388,7 +468,7 @@
   }
   $("save").addEventListener("click", function () {
     if (!state.cards.length) { say("Adicione cartões antes de salvar."); return; }
-    var data = { app: "visitasc-analisador", version: 1, savedAt: new Date().toISOString(), congregation: state.congregation, period: state.period, preset: state.preset, year: state.year, studyRule: state.studyRule, groups: state.groups, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards };
+    var data = { app: "visitasc-analisador", version: 1, savedAt: new Date().toISOString(), congregation: state.congregation, period: state.period, preset: state.preset, year: state.year, studyRule: state.studyRule, groups: state.groups, done: state.done, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards };
     download(JSON.stringify(data), "analise-" + slug(state.congregation) + "-" + today() + ".json", "application/json;charset=utf-8");
     dirty = false; say("");
   });
@@ -410,7 +490,7 @@
         return p;
       });
       var yr = d.year ? Number(d.year) : A.yearOfMonth(d.period && d.period.to);
-      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, preset: d.preset || (d.period && d.period.from ? "custom" : "6m"), active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), cards: cards };
+      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, preset: d.preset || (d.period && d.period.from ? "custom" : "6m"), active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), done: d.done && typeof d.done === "object" ? d.done : {}, cards: cards };
       openAreas = {}; dirty = false; fixPeriod(); say(""); render();
     } catch (err) { say("Este arquivo não é uma análise salva pelo Analisador de congregações."); }
   });
@@ -484,6 +564,34 @@
       if (!items.length) text("Ninguém neste período.", { indent: 10, color: grey, gap: 8 });
       items.forEach(function (it, n) { text(it.name + " - " + areaName(it.area), { indent: 10, bold: true, gap: 1 }); text(it.detail, { indent: 20, color: grey, gap: n === items.length - 1 ? 8 : 4 }); });
     });
+
+    var tt = A.monthlyTotals(state.cards, { from: state.period.from, to: state.period.to, area: "all" });
+    if (tt.months.length) {
+      need(40); text("Totais mensais (geral)", { size: 13, bold: true, gap: 6 });
+      for (var a = 0; a < tt.months.length; a += 6) {
+        var ms = tt.months.slice(a, a + 6), lw = 170, cw = (W - 2 * M - lw) / ms.length;
+        need(30);
+        ms.forEach(function (k, j) { page.drawText(pdfSafe(A.label(k)), { x: M + lw + j * cw + 3, y: y - 9, size: 8.5, font: bold, color: ink }); });
+        y -= 12; rule();
+        A.TOTAL_SECTIONS.forEach(function (sec) {
+          need(14); page.drawText(pdfSafe(sec.label), { x: M, y: y - 9.5, size: 9.5, font: bold, color: grey }); y -= 14;
+          sec.rows.forEach(function (rw) {
+            need(14); page.drawText(fit(rw[1], font, 9.5, lw - 14), { x: M + 8, y: y - 9.5, size: 9.5, font: font, color: ink });
+            ms.forEach(function (k, j) { page.drawText(String(Math.round(tt.rows[k][rw[0]] * 10) / 10), { x: M + lw + j * cw + 3, y: y - 9.5, size: 9.5, font: bold, color: ink }); });
+            y -= 14;
+          });
+        });
+        y -= 8;
+      }
+    }
+    var gy = rpYear(), goals = gy ? A.pioneerYear(state.cards, gy) : null;
+    if (goals && goals.list.length) {
+      need(40); text("Pioneiros regulares - meta anual " + gy + " (600 h)", { size: 13, bold: true, gap: 6 });
+      goals.list.forEach(function (x) {
+        text(x.name + (x.late ? " (iniciou em " + A.label(x.start) + ")" : "") + ": " + (x.diff < 0 ? "atrasado " + hrs(-x.diff) : "em dia +" + hrs(x.diff)), { bold: true, gap: 1 });
+        text("Feitas " + hrs(x.done) + " - meta até agora " + hrs(x.goalNow) + " - meta do ano " + hrs(x.goalYear) + " - média " + hrs(x.avg) + "/mês" + (x.left ? " - precisa " + hrs(x.need) + "/mês" : ""), { indent: 10, color: grey, gap: 6 });
+      });
+    }
 
     var notes = [["Geral", state.notes]].concat(state.groups.map(function (g) { return [g.name || "Grupo sem nome", g.note]; })).concat([["Pioneiros regulares", state.pioneersNote]]).filter(function (n) { return (n[1] || "").trim(); });
     if (notes.length) {

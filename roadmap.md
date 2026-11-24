@@ -70,3 +70,4 @@
 - [x] Trocar cartão (⟳) e reimportar atualiza
 - [x] Importar pastas dos grupos (nome da pasta = grupo)
 - [x] Tocar no nome da lista abre o cartão mês a mês
+- [x] Analisador (24/11): pílulas em ordem + "Encerrar análise", sem cartão <50 h no resumo, totais mensais, meta anual 600 h dos pioneiros, importar .json (Circuit Manager) e .xml (TSWin)

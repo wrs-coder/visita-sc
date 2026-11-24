@@ -61,3 +61,22 @@ table.view tr.out td{opacity:.5}
 .warnc{color:var(--warn);font-weight:700}
 .back{background:var(--bg);color:var(--accent);min-height:40px;padding:0 12px;border-radius:20px;font-weight:600}
 .range{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.range label{display:flex;flex-direction:column;font-size:.85rem;gap:4px}.range select{width:100%;min-width:0}
+
+/* Grupo analisado, totais mensais e meta dos pioneiros */
+.pill .done{font-style:normal;color:var(--ok);margin-right:4px}
+.pill[aria-selected="true"] .done{color:var(--card)}
+.finish{width:100%;margin-top:12px;min-height:44px}
+.donebar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding:6px 12px;border-radius:12px;background:var(--bg);color:var(--ok);font-weight:600;font-size:14px}
+.boxh{font-size:15px;font-weight:600;margin:0;color:var(--muted)}
+.tbox>summary{cursor:pointer;font-weight:600;color:var(--muted);font-size:15px;min-height:28px}
+.tscroll{overflow-x:auto;margin-top:10px;-webkit-overflow-scrolling:touch}
+.ttable{border-collapse:collapse;font-size:13px;width:100%}
+.ttable th,.ttable td{padding:6px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+.ttable tbody th,.ttable thead th:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:var(--card)}
+.ttable thead th{color:var(--muted);font-weight:600}
+.ttable tr.sec th{color:var(--accent);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.02em;padding-top:12px}
+.goals .goal{width:100%}
+.goal .gtop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.goal p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.goal small{color:var(--muted);font-weight:500}
+.tbox{display:block;overflow:hidden}

@@ -157,6 +157,169 @@
     return out;
   }
 
+  /** Ordem crescente "natural": Grupo 2 antes de Grupo 10. */
+  function sortGroups(groups) {
+    return groups.slice().sort(function (a, b) { return String(a.name || "").localeCompare(String(b.name || ""), "pt", { numeric: true, sensitivity: "base" }); });
+  }
+
+  /** Totais mês a mês. opts: { from, to, area }. Só meses com relatório na congregação. */
+  function monthlyTotals(cards, opts) {
+    opts = opts || {};
+    var reported = {}; reportedMonths(cards).forEach(function (k) { reported[k] = true; });
+    var months = monthsBetween(opts.from, opts.to).filter(function (k) { return reported[k]; });
+    var rows = {}, keys = ["pubStudies", "pubIrregular", "auxReported", "auxHours", "auxStudies", "rpReported", "rpHours", "rpStudies", "studies", "aux", "irregular", "newUnbap", "newBap"];
+    months.forEach(function (k) { rows[k] = {}; keys.forEach(function (x) { rows[k][x] = 0; }); });
+    people(cards).forEach(function (h) {
+      if (opts.area && opts.area !== "all" && h.area !== opts.area) return;
+      var unbap = h.main.status === "Unbaptized Publisher" && !h.baptism;
+      months.forEach(function (k) {
+        var t = rows[k], e = h.months[k];
+        if (h.baptism && h.baptism.slice(0, 7) === k) t.newBap++;
+        if (!e) return;
+        var m = e.m, q = e.p, st = m.studies || 0, hr = m.hours || 0, sh = shared(m);
+        t.studies += st;
+        if (unbap && ((h.firstShared === k && h.keys.some(function (x) { return x < k; })) || NEW_PUB.test(m.comments || ""))) t.newUnbap++;
+        if (q.status === "Regular Pioneer") { if (sh) t.rpReported++; t.rpHours += hr; t.rpStudies += st; return; }
+        if (m.auxiliary || (q.status === "Continuous Auxiliary Pioneer" && hasData(m))) { t.aux++; if (sh) t.auxReported++; t.auxHours += hr; t.auxStudies += st; return; }
+        t.pubStudies += st;
+        if (!sh && !(h.firstShared && k < h.firstShared)) { t.pubIrregular++; t.irregular++; }
+      });
+    });
+    return { months: months, rows: rows };
+  }
+  var TOTAL_SECTIONS = [
+    { key: "pub", label: "Publicadores", rows: [["pubStudies", "Estudos"], ["pubIrregular", "Irregulares"]] },
+    { key: "aux", label: "Pioneiros auxiliares", rows: [["auxReported", "Relataram"], ["auxHours", "Horas"], ["auxStudies", "Estudos"]] },
+    { key: "rp", label: "Pioneiros regulares", rows: [["rpReported", "Relataram"], ["rpHours", "Horas"], ["rpStudies", "Estudos"]] },
+    { key: "all", label: "Geral", rows: [["studies", "Estudos bíblicos"], ["aux", "Pioneiros auxiliares"], ["irregular", "Irregulares"], ["newUnbap", "Novos não batizados"], ["newBap", "Novos batizados"]] }
+  ];
+
+  /**
+   * Meta anual de pioneiro regular (600 h = 50 h/mês, set–ago).
+   * Começou no ano: meta = 50 × meses do início até agosto. Início = mês com "pioneiro regular" na observação, senão o primeiro mês com horas.
+   * upTo = último mês com relatório na congregação dentro do ano (ou o informado).
+   */
+  function pioneerYear(cards, year, upTo) {
+    var from = (year - 1) + "-09", to = year + "-08", all = monthsBetween(from, to);
+    var rep = reportedMonths(cards).filter(function (k) { return k >= from && k <= to; });
+    var last = upTo && upTo >= from ? (upTo > to ? to : upTo) : rep[rep.length - 1];
+    var out = [];
+    people(cards).forEach(function (h) {
+      var mine = all.filter(function (k) { return h.months[k] && h.months[k].p.status === "Regular Pioneer"; });
+      if (!mine.length) return;
+      var at = function (k) { return h.months[k].m; };
+      var noted = mine.filter(function (k) { return /pioneir[oa]\s+regular/i.test(at(k).comments || ""); })[0];
+      var withH = mine.filter(function (k) { return (at(k).hours || 0) > 0; })[0];
+      var start = noted || withH || mine[0];
+      if (start < mine[0]) start = mine[0];
+      var span = monthsBetween(start, to), elapsed = last && last >= start ? monthsBetween(start, last) : [];
+      var done = elapsed.reduce(function (s, k) { return s + ((h.months[k] && at(k).hours) || 0); }, 0);
+      var goalYear = 50 * span.length, goalNow = 50 * elapsed.length, left = span.length - elapsed.length;
+      out.push({
+        id: h.main.id, name: h.name, area: h.area, start: start, late: start > from,
+        months: elapsed.length, done: done, goalYear: goalYear, goalNow: goalNow, diff: done - goalNow,
+        avg: elapsed.length ? Math.round(done / elapsed.length * 10) / 10 : 0,
+        need: left > 0 ? Math.max(0, Math.ceil((goalYear - done) / left)) : 0, left: left
+      });
+    });
+    out.sort(function (a, b) { return a.diff - b.diff || a.name.localeCompare(b.name, "pt"); });
+    return { year: year, upTo: last || "", list: out };
+  }
+
+  // ---------- arquivos de dados (Circuit Manager .json / TSWin .xml) → cartões ----------
+  var EN3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function blankCard(info, year) {
+    var p = { file: info.file || "", firstname: info.firstname || "", middlename: info.middlename || "", lastname: info.lastname || "", suffix: "",
+      sex: info.sex || "", birth: info.birth || "", baptism: info.baptism || "", appt: info.appt || "", status: info.status, serviceYear: "", months: [], notes: [], special: info.special || "" };
+    for (var i = 0; i < 12; i++) p.months.push({ month: "", participated: false, studies: null, auxiliary: false, hours: null, comments: "" });
+    S().setServiceYear(p, (year - 1) + "/" + year);
+    return p;
+  }
+  function iso(v) { var m = /^(\d{4}-\d{2}-\d{2})/.exec(String(v || "")); return m ? m[1] : ""; }
+  /** rec por mês "aaaa-mm": { hours, studies, aux, rp, remark, any }. Gera um cartão por ano de serviço. */
+  function cardsFrom(info, recs) {
+    var years = {};
+    Object.keys(recs).forEach(function (k) { years[yearOfMonth(k)] = true; });
+    return Object.keys(years).map(Number).sort().map(function (y) {
+      var anyRp = Object.keys(recs).some(function (k) { return yearOfMonth(k) === y && recs[k].rp; });
+      var st = anyRp || info.rp ? "Regular Pioneer" : info.baptism ? "Baptized Publisher" : "Unbaptized Publisher";
+      var p = blankCard(Object.assign({}, info, { status: st }), y);
+      p.months.forEach(function (m) {
+        var r = recs[m.month]; if (!r) return;
+        var pio = r.rp || r.aux || st === "Regular Pioneer";
+        m.participated = !!(r.hours > 0 || r.studies > 0 || r.any);
+        m.studies = r.studies > 0 ? r.studies : (m.participated ? 0 : null);
+        m.auxiliary = !!r.aux;
+        m.hours = pio && r.hours > 0 ? r.hours : null;
+        m.comments = r.remark || "";
+      });
+      return p;
+    });
+  }
+  function nameParts(first, last) { var f = String(first || "").trim().split(/\s+/).filter(Boolean); return { firstname: f[0] || "", middlename: f.slice(1).join(" "), lastname: String(last || "").trim() }; }
+
+  /** Circuit Manager / Hourglass (hourglass-export.json) → { file, groups: [{ key, name, rp, cards }] } */
+  function fromCircuitJson(d, file) {
+    if (!d || !Array.isArray(d.publishers) || !Array.isArray(d.reports)) throw new Error("formato");
+    var byUser = {};
+    d.reports.forEach(function (r) {
+      var u = r.user && r.user.id; if (u == null || !r.year || !r.month) return;
+      var k = ym(r.year, r.month), hrs = r.minutes != null ? Math.round(r.minutes / 6) / 10 : Number(r.minutes_as_hours) || 0;
+      (byUser[u] = byUser[u] || {})[k] = { hours: hrs, studies: Number(r.studies) || 0, aux: r.pioneer === "Auxiliary", rp: r.pioneer === "Regular", remark: String(r.remarks || "").trim(), any: true };
+    });
+    var fsg = Array.isArray(d.fsGroups) ? d.fsGroups : [], gname = {};
+    fsg.forEach(function (g, i) { gname[g.id] = String(g.name || "").trim() || "Grupo " + (i + 1); });
+    var out = [], byKey = {};
+    d.publishers.forEach(function (pb) {
+      var recs = byUser[pb.id]; if (!recs) return;
+      var rpStatus = /Regular Pioneer|FieldMissionary|Special Pioneer/.test(pb.status || "");
+      var info = Object.assign(nameParts([pb.firstname, pb.middlename].filter(Boolean).join(" "), pb.lastname), {
+        file: file, sex: pb.sex === "Female" ? "Female" : pb.sex === "Male" ? "Male" : "", birth: iso(pb.birth), baptism: iso(pb.baptism),
+        appt: pb.appt === "Elder" ? "Elder" : pb.appt === "MS" ? "MS" : "", rp: rpStatus, special: pb.status === "FieldMissionary" ? "fm" : pb.status === "Special Pioneer" ? "sp" : "" });
+      var cards = cardsFrom(info, recs);
+      var rp = cards.some(function (c) { return c.status === "Regular Pioneer"; });
+      var name = pb.group_id != null ? (gname[pb.group_id] || "Grupo " + pb.group_id) : null;
+      var key = rp ? "rp" : name === null ? "" : normName(name);
+      if (!byKey[key]) { byKey[key] = { key: key, name: rp ? "Pioneiros regulares" : name, rp: rp, cards: [] }; out.push(byKey[key]); }
+      byKey[key].cards = byKey[key].cards.concat(cards);
+    });
+    return { file: file, people: d.publishers.filter(function (pb) { return byUser[pb.id]; }).length, groups: out };
+  }
+
+  function xmlText(block, tag) {
+    var m = new RegExp("<" + tag.replace(/\./g, "\\.") + "(?:\\s[^>]*)?>([\\s\\S]*?)</" + tag.replace(/\./g, "\\.") + ">").exec(block);
+    return m ? m[1].replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&").trim() : "";
+  }
+  /** TSWin (Active.xml) → { file, groups } */
+  function fromTswinXml(text, file) {
+    text = String(text || "");
+    if (!/<PUBLIST[\s>]/.test(text)) throw new Error("formato");
+    var pubs = text.match(/<Pub>[\s\S]*?<\/Pub>/g) || [];
+    var out = [], byKey = {}, n = 0;
+    pubs.forEach(function (b) {
+      var recs = {};
+      var re = /<(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+Year="(\d{4})">([\s\S]*?)<\/\1>/g, mm;
+      while ((mm = re.exec(b))) {
+        var body = mm[3], pio = xmlText(body, "Pio"), hrs = Number(xmlText(body, "Hours").replace(",", ".")) || 0, st = Number(xmlText(body, "BiSt.")) || 0, rem = xmlText(body, "Remark");
+        if (!hrs && !st && !pio && !rem) continue;
+        recs[ym(+mm[2], EN3.indexOf(mm[1]) + 1)] = { hours: hrs, studies: st, aux: /^Aux/i.test(pio), rp: /^(Reg|Spe|Sp)/i.test(pio), remark: rem, any: hrs > 0 || st > 0 };
+      }
+      if (!Object.keys(recs).length) return;
+      n++;
+      var svt = xmlText(b, "svt"), g = xmlText(b, "gender");
+      var info = Object.assign(nameParts(xmlText(b, "fname"), xmlText(b, "lname")), {
+        file: file, sex: /^f/i.test(g) ? "Female" : /^m/i.test(g) ? "Male" : "", birth: iso(xmlText(b, "birdate")), baptism: iso(xmlText(b, "bapdate")),
+        appt: svt === "Elder" ? "Elder" : /^(MinSvt|MS)$/.test(svt) ? "MS" : "" });
+      var cards = cardsFrom(info, recs);
+      var rp = cards.some(function (c) { return c.status === "Regular Pioneer"; });
+      var gr = xmlText(b, "group"), name = gr ? (/^\d+$/.test(gr) ? "Grupo " + gr : gr) : null;
+      var key = rp ? "rp" : name === null ? "" : normName(name);
+      if (!byKey[key]) { byKey[key] = { key: key, name: rp ? "Pioneiros regulares" : name, rp: rp, cards: [] }; out.push(byKey[key]); }
+      byKey[key].cards = byKey[key].cards.concat(cards);
+    });
+    return { file: file, people: n, groups: out };
+  }
+
   var TILES = [
     { key: "elder", label: "Anciãos" },
     { key: "ms", label: "Servos ministeriais" },
@@ -167,8 +330,7 @@
     { key: "newBap", label: "Novos batizados", list: true },
     { key: "irregular", label: "Irregulares", list: true },
     { key: "apptAux", label: "Anciãos e servos como P.A.", list: true },
-    { key: "studies", label: "Dirigem estudos", list: true },
-    { key: "rpLow", label: "Pioneiros regulares abaixo de 50 h", list: true }
+    { key: "studies", label: "Dirigem estudos", list: true }
   ];
   var STUDY_RULES = [
     { key: "last", label: "Relatou estudos no último mês do período" },
@@ -176,6 +338,6 @@
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups };
+  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
