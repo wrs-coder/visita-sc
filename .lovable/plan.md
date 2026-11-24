@@ -87,6 +87,35 @@ Na pílula Pioneiros reg., ano de serviço de setembro a agosto:
 - Lista ordenada do mais atrasado ao mais adiantado. Toque no nome → cartão mês a mês (já existe).
 - Usa o ano de serviço do período escolhido. Com "6 meses", usa o ano do último mês do período.
 
+
+## 6. Importar arquivos do Circuit Manager (.json) e do TSWin (.xml)
+
+O botão de importar passa a aceitar, além dos cartões em PDF, os arquivos `hourglass-export.json` e `Active.xml`. Também dá para arrastar os arquivos.
+
+```text
+┌───────────────────────────────────┐
+│ [+ Cartões ou arquivos] [📁 Pastas]│
+│  PDF S-21 · .json · .xml          │
+├───────────────────────────────────┤
+│ Conferir importação               │
+│ Active-2.xml · 7 publicadores     │
+│  Grupo 1 → [Grupo 1        ▾]     │
+│  Grupo 2 → [novo: Grupo 2  ▾]     │
+│  Pioneiros regulares → Pioneiros  │
+│        [Cancelar]  [Importar]     │
+└───────────────────────────────────┘
+```
+
+- Cada pessoa vira um cartão igual ao do PDF: nome, sexo, nascimento, batismo, ancião/servo, pioneiro regular, P.A. por mês, participou, estudos, horas e observações. Depois disso, as análises, as edições e o cartão mês a mês funcionam como já funcionam.
+- **Grupos:** o grupo que vem no arquivo (`group` no XML, grupo de campo no JSON) vira uma pílula. Se o grupo não tiver nome, ele se chama "Grupo 1", "Grupo 2" e assim por diante. Os pioneiros regulares vão para Pioneiros reg. Antes de importar, aparece a mesma conferência das pastas.
+- **Ano de serviço:** os meses de set a ago formam o cartão do ano. Por exemplo, set/2026 a ago/2027 = ano 2027. Um arquivo com dois anos vira dois cartões da mesma pessoa, unidos como já acontece hoje.
+- **Publicador comum com "1 hora":** é a marcação de participação, como nos arquivos que o próprio Conversor gera. Ao importar, conta como "participou" e não soma horas.
+- **Já existe a pessoa:** se o mesmo nome e o mesmo ano já estão carregados, o cartão é atualizado em vez de duplicar, igual a importar um PDF de novo.
+- Arquivo de outro tipo ou com defeito: aparece um aviso e nada é alterado.
+- Tudo é lido no aparelho. Nada é enviado para fora.
+
+Técnico: `analyzer.js` ganha `fromCircuitJson(obj)` e `fromTswinXml(text)` (DOMParser), que geram o mesmo formato de cartão do `S21.parse`. `app.js` direciona pela extensão do arquivo e reaproveita a conferência de `folderGroups`. Testes com os dois arquivos enviados: quantidade de pessoas, grupos, um mês conhecido e a regra do "1 h".
+
 ## Detalhes técnicos
 
 - `analyzer.js` (funções puras): `sortGroups` (comparação natural pt), `monthlyTotals(cards, opts)`, `pioneerYear(cards, year)`. Remover `rpLow` do `TILES` dos grupos; a lista continua disponível para os pioneiros.
