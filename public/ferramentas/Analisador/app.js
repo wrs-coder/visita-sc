@@ -5,8 +5,8 @@
   var seq = 0;
   function uid(prefix) { seq++; return prefix + Date.now().toString(36) + seq; }
 
-  var state = blank(), dirty = false, addTo = null, openAreas = {};
-  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", scope: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", cards: [] }; }
+  var state = blank(), dirty = false, addTo = null, replaceId = null, openAreas = {};
+  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", cards: [] }; }
   function touch() { dirty = true; }
 
   function areaName(id) {
@@ -35,38 +35,45 @@
   function cardKey(p) { return [A.fullName(p).toLowerCase(), p.birth || "", S.serviceYearEnd(p.serviceYear) || p.serviceYear].join("|"); }
 
   async function addFiles(files, area) {
-    var bad = [], dup = [], ok = 0;
+    var bad = [], upd = 0, ok = 0;
     for (var i = 0; i < files.length; i++) {
       try {
         var p = await readPdf(files[i]);
-        if (state.cards.some(function (q) { return cardKey(q) === cardKey(p); })) { dup.push(files[i].name); continue; }
+        var old = state.cards.filter(function (q) { return cardKey(q) === cardKey(p); })[0];
+        if (old) { p.id = old.id; p.area = old.area; state.cards[state.cards.indexOf(old)] = p; upd++; continue; }
         p.id = uid("c"); p.area = area; state.cards.push(p); ok++;
       } catch (e) { bad.push(files[i].name); }
     }
-    if (ok) touch();
+    if (ok || upd) touch();
     var parts = [];
     if (bad.length) parts.push("Não lidos (sem campos preenchíveis): " + bad.join(", "));
-    if (dup.length) parts.push("Já adicionados (mesma pessoa e mesmo ano): " + dup.join(", "));
+    if (upd || ok) parts.unshift((ok ? ok + (ok === 1 ? " novo" : " novos") : "") + (ok && upd ? ", " : "") + (upd ? upd + (upd === 1 ? " atualizado" : " atualizados") : ""));
     say(parts.join(" · "));
+    fixPeriod(); render();
+  }
+  async function replaceCard(id, file) {
+    var old = state.cards.filter(function (q) { return q.id === id; })[0]; if (!old) return;
+    try {
+      var p = await readPdf(file); p.id = old.id; p.area = old.area;
+      state.cards[state.cards.indexOf(old)] = p; touch(); say("Cartão atualizado: " + A.fullName(p));
+    } catch (e) { say("Não lido (sem campos preenchíveis): " + file.name); }
     fixPeriod(); render();
   }
 
   // ---------- período ----------
   function fixPeriod() {
-    var months = A.coveredMonths(state.cards), p = state.period;
-    if (!months.length) { state.period = { from: "", to: "" }; return; }
-    if (months.indexOf(p.from) < 0 || months.indexOf(p.to) < 0 || p.from > p.to) state.period = A.defaultPeriod(state.cards);
-    if (!state.period.from) state.period = { from: months[0], to: months[months.length - 1] };
+    var ys = A.serviceYears(state.cards);
+    if (!ys.length) { state.year = null; state.period = { from: "", to: "" }; return; }
+    if (ys.indexOf(state.year) < 0) state.year = ys[ys.length - 1];
+    state.period = A.periodOf(state.year);
   }
   function renderPeriod() {
-    var months = A.coveredMonths(state.cards);
-    var opts = function (val) { return months.length ? months.map(function (k) { return '<option value="' + k + '"' + (k === val ? " selected" : "") + ">" + A.label(k) + "</option>"; }).join("") : '<option value="">—</option>'; };
-    $("from").innerHTML = opts(state.period.from); $("to").innerHTML = opts(state.period.to);
-    $("from").disabled = $("to").disabled = !months.length;
-    if (!months.length) { $("periodInfo").textContent = "Adicione os cartões para escolher o período."; return; }
-    var n = A.monthsBetween(state.period.from, state.period.to).length;
+    var ys = A.serviceYears(state.cards);
+    $("years").innerHTML = ys.map(function (y) { return '<button class="pill" data-year="' + y + '" aria-pressed="' + (y === state.year) + '">Ano ' + y + "<small>" + (y - 1) + "/" + y + "</small></button>"; }).join("");
+    $("years").hidden = !ys.length;
+    if (!ys.length) { $("periodInfo").textContent = "Adicione os cartões. O ano de serviço vem do cartão: “2026/2027” = ano 2027."; return; }
     var live = A.analyze(state.cards, { from: state.period.from, to: state.period.to }).months.length;
-    $("periodInfo").textContent = n + (n === 1 ? " mês" : " meses") + " no período · " + live + " com relatório. Setembro a agosto = um ano de serviço.";
+    $("periodInfo").textContent = "Ano de serviço " + state.year + ": set/" + (state.year - 1) + " a ago/" + state.year + " · " + live + (live === 1 ? " mês" : " meses") + " com relatório.";
   }
 
   // ---------- cartões ----------
@@ -93,7 +100,7 @@
     }).join("");
     var move = '<label class="full">Mover para' + sel("area", p.area, areas().map(function (a) { return [a.id, a.name]; })) + "</label>";
     return '<details class="card" data-id="' + p.id + '"><summary><div><strong>' + esc(A.fullName(p)) + "</strong>" +
-      '<div class="sub">' + esc([p.serviceYear ? "Ano " + p.serviceYear : "", role, ST[p.status]].filter(Boolean).join(" · ")) + "</div></div>" +
+      '<div class="sub">' + esc([A.cardYear(p) ? "Ano " + A.cardYear(p) : "Ano não lido", role, ST[p.status]].filter(Boolean).join(" · ")) + "</div></div>" +
       '<span class="badge ' + (w.length ? "warn" : "ok") + '">' + (w.length ? "⚠ " + w.length : "✓") + '</span></summary><div class="body">' +
       (w.length ? '<ul class="warns">' + w.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "") +
       '<div class="grid">' + move +
@@ -107,7 +114,7 @@
       '<label class="full">Ano de serviço<input data-k="serviceYear" value="' + esc(p.serviceYear) + '" placeholder="Ex.: 2026/2027"></label>' +
       '<label class="full">Situação' + sel("status", p.status, [["Baptized Publisher", "Publicador batizado"], ["Unbaptized Publisher", "Publicador não batizado"], ["Regular Pioneer", "Pioneiro regular"], ["Continuous Auxiliary Pioneer", "Pioneiro auxiliar contínuo"]]) + "</label>" +
       '</div><table class="months"><thead><tr><th>Mês</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th>Obs.</th></tr></thead><tbody>' + rows + "</tbody></table>" +
-      '<button class="rm" data-rm>Remover este cartão</button></div></details>';
+      '<div class="cardtools"><button class="soft" data-replace>⟳ Trocar por PDF novo</button><button class="rm" data-rm>Remover este cartão</button></div></div></details>';
   }
 
   function areaHtml(id, g) {
@@ -118,7 +125,7 @@
       (g ? '<input data-g="name" value="' + esc(g.name) + '" aria-label="Nome do grupo" placeholder="Nome do grupo">' +
         '<input data-g="overseer" value="' + esc(g.overseer) + '" aria-label="Superintendente do grupo" placeholder="Superintendente do grupo">' : "") +
       '<span class="count">' + count + "</span></div>" +
-      '<div class="arow"><button class="soft" data-add>⬆ Adicionar cartões</button><button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
+      '<div class="arow"><button class="soft" data-add>⬆ Importar S-21</button><button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
       '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? list.map(cardHtml).join("") : "") + "</div>" +
       (g && state.groups.length > 1 ? '<button class="rmgroup" data-delgroup>Remover grupo</button>' : "") + "</div>";
   }
@@ -127,12 +134,10 @@
   function analysis(scope) { return A.analyze(state.cards, { from: state.period.from, to: state.period.to, studyRule: state.studyRule, area: scope || "all" }); }
   function renderSummary() {
     $("summaryBox").hidden = !state.cards.length;
-    var scopes = [{ id: "all", name: "Geral" }].concat(areas());
-    if (!scopes.some(function (s) { return s.id === state.scope; })) state.scope = "all";
-    $("scope").innerHTML = scopes.map(function (s) { return '<option value="' + s.id + '"' + (s.id === state.scope ? " selected" : "") + ">" + esc(s.name) + "</option>"; }).join("");
+    $("sumTitle").textContent = "Resumo — " + (state.active === "all" ? "Geral (toda a congregação)" : areaName(state.active));
     $("rule").innerHTML = A.STUDY_RULES.map(function (r) { return '<option value="' + r.key + '"' + (r.key === state.studyRule ? " selected" : "") + ">" + esc(r.label) + "</option>"; }).join("");
     if (!state.cards.length) return;
-    var r = analysis(state.scope);
+    var r = analysis(state.active);
     $("tiles").innerHTML = A.TILES.map(function (t) {
       var inner = "<b>" + r.counts[t.key] + "</b><span>" + esc(t.label) + "</span>" + (t.hint ? "<small>" + esc(t.hint) + "</small>" : "");
       return t.list ? '<button class="tile" data-tile="' + t.key + '" aria-label="' + esc(t.label + ": " + r.counts[t.key] + ". Ver lista") + '">' + inner + "</button>" : '<div class="tile">' + inner + "</div>";
@@ -140,26 +145,36 @@
   }
   function periodLabel() { return state.period.from ? A.label(state.period.from) + " a " + A.label(state.period.to) : ""; }
   function openList(key) {
-    var t = A.TILES.filter(function (x) { return x.key === key; })[0], r = analysis(state.scope), items = r.lists[key] || [];
-    $("sheetTitle").textContent = t.label + " · " + (state.scope === "all" ? "Geral" : areaName(state.scope)) + " · " + periodLabel();
+    var t = A.TILES.filter(function (x) { return x.key === key; })[0], r = analysis(state.active), items = r.lists[key] || [];
+    $("sheetTitle").textContent = t.label + " · " + (state.active === "all" ? "Geral" : areaName(state.active)) + " · " + periodLabel();
     $("sheetBody").innerHTML = items.length ? items.map(function (i) {
       return '<div class="item"><strong>' + esc(i.name) + "</strong><small>" + esc(areaName(i.area)) + "</small><p>" + esc(i.detail) + "</p></div>";
     }).join("") : '<p class="muted">Ninguém neste período.</p>';
     if ($("sheet").showModal) $("sheet").showModal(); else $("sheet").setAttribute("open", "");
   }
 
-  // ---------- anotações ----------
+  // ---------- anotações (da pílula ativa) ----------
+  function noteOf(id) { if (id === "all") return state.notes; if (id === "rp") return state.pioneersNote; var g = state.groups.filter(function (x) { return x.id === id; })[0]; return g ? g.note : ""; }
   function renderNotes() {
-    var f = function (key, lbl, val) { return '<label class="notefield">' + esc(lbl) + '<textarea data-note="' + key + '" placeholder="Escreva aqui…">' + esc(val) + "</textarea></label>"; };
-    $("notes").innerHTML = f("all", "Geral", state.notes) + state.groups.map(function (g) { return f(g.id, g.name || "Grupo sem nome", g.note); }).join("") + f("rp", "Pioneiros regulares", state.pioneersNote);
+    $("noteTitle").textContent = state.active === "all" ? "Anotações gerais" : "Anotações — " + areaName(state.active);
+    $("note").value = noteOf(state.active) || "";
+  }
+  function renderTabs() {
+    var tabs = [{ id: "all", name: "Geral" }].concat(areas());
+    if (!tabs.some(function (t) { return t.id === state.active; })) state.active = "all";
+    $("tabs").innerHTML = tabs.map(function (t) {
+      var n = t.id === "all" ? state.cards.length : cardsOf(t.id).length;
+      return '<button class="pill" role="tab" data-tab="' + t.id + '" aria-selected="' + (t.id === state.active) + '">' + esc(t.id === "rp" ? "Pioneiros reg." : t.name) + "<small>" + n + "</small></button>";
+    }).join("") + '<button class="pill add" data-addgroup>+ Grupo</button>';
   }
 
   function render() {
     var openCards = Array.from(document.querySelectorAll(".card[open]")).map(function (d) { return d.dataset.id; });
     $("cong").value = state.congregation;
     renderPeriod();
-    $("groups").innerHTML = state.groups.map(function (g) { return areaHtml(g.id, g); }).join("");
-    $("pioneers").innerHTML = areaHtml("rp", null);
+    renderTabs();
+    var g = state.groups.filter(function (x) { return x.id === state.active; })[0];
+    $("area").innerHTML = state.active === "all" ? "" : areaHtml(state.active, g || null);
     openCards.forEach(function (id) { var d = document.querySelector('.card[data-id="' + id + '"]'); if (d) d.open = true; });
     renderSummary();
     renderNotes();
@@ -167,22 +182,24 @@
 
   // ---------- eventos ----------
   $("cong").addEventListener("input", function (e) { state.congregation = e.target.value; touch(); });
-  $("from").addEventListener("change", function (e) { state.period.from = e.target.value; if (state.period.from > state.period.to) state.period.to = state.period.from; touch(); render(); });
-  $("to").addEventListener("change", function (e) { state.period.to = e.target.value; if (state.period.to < state.period.from) state.period.from = state.period.to; touch(); render(); });
-  $("scope").addEventListener("change", function (e) { state.scope = e.target.value; renderSummary(); });
+  $("years").addEventListener("click", function (e) { var b = e.target.closest("[data-year]"); if (!b) return; state.year = Number(b.dataset.year); fixPeriod(); touch(); render(); });
+  $("tabs").addEventListener("click", function (e) {
+    if (e.target.closest("[data-addgroup]")) {
+      var g = { id: uid("g"), name: "Grupo " + (state.groups.length + 1), overseer: "", note: "" };
+      state.groups.push(g); state.active = g.id; touch(); render();
+      var inp = document.querySelector('#area [data-g="name"]'); if (inp) inp.select();
+      return;
+    }
+    var b = e.target.closest("[data-tab]"); if (b) { state.active = b.dataset.tab; render(); }
+  });
   $("rule").addEventListener("change", function (e) { state.studyRule = e.target.value; touch(); renderSummary(); });
   $("tiles").addEventListener("click", function (e) { var b = e.target.closest("[data-tile]"); if (b) openList(b.dataset.tile); });
   $("sheetClose").addEventListener("click", function () { $("sheet").close(); });
   $("sheet").addEventListener("click", function (e) { if (e.target === $("sheet")) $("sheet").close(); });
-  $("addGroup").addEventListener("click", function () {
-    state.groups.push({ id: uid("g"), name: "Grupo " + (state.groups.length + 1), overseer: "", note: "" }); touch(); render();
-    var last = document.querySelectorAll("#groups .area"); last = last[last.length - 1];
-    if (last) { last.scrollIntoView({ block: "center", behavior: "smooth" }); last.querySelector('[data-g="name"]').select(); }
-  });
-  $("notes").addEventListener("input", function (e) {
-    var k = e.target.dataset.note; if (!k) return;
-    if (k === "all") state.notes = e.target.value; else if (k === "rp") state.pioneersNote = e.target.value;
-    else state.groups.forEach(function (g) { if (g.id === k) g.note = e.target.value; });
+  $("note").addEventListener("input", function (e) {
+    var k = state.active, v = e.target.value;
+    if (k === "all") state.notes = v; else if (k === "rp") state.pioneersNote = v;
+    else state.groups.forEach(function (g) { if (g.id === k) g.note = v; });
     touch();
   });
 
@@ -197,8 +214,9 @@
         if (!confirm(n ? "Remover o grupo e os " + n + " cartões dele?" : "Remover este grupo?")) return;
         state.groups = state.groups.filter(function (g) { return g.id !== id; });
         state.cards = state.cards.filter(function (p) { return p.area !== id; });
-        touch(); fixPeriod(); render(); return;
+        state.active = "all"; touch(); fixPeriod(); render(); return;
       }
+      if (el.closest("[data-replace]")) { replaceId = el.closest(".card").dataset.id; $("pdfOne").click(); return; }
       if (el.matches("[data-rm]")) {
         var c = el.closest(".card");
         if (confirm("Remover este cartão?")) { state.cards = state.cards.filter(function (p) { return p.id !== c.dataset.id; }); touch(); fixPeriod(); render(); }
@@ -221,7 +239,8 @@
       renderSummary(); renderPeriod();
     }
   }
-  ["groups", "pioneers"].forEach(function (id) { $(id).addEventListener("click", onAreas); $(id).addEventListener("change", onAreas); });
+  $("area").addEventListener("click", onAreas); $("area").addEventListener("change", onAreas);
+  $("pdfOne").addEventListener("change", function (e) { var f = e.target.files[0]; e.target.value = ""; if (replaceId && f) replaceCard(replaceId, f); replaceId = null; });
   $("pdfs").addEventListener("change", function (e) { var files = Array.from(e.target.files); e.target.value = ""; if (addTo && files.length) addFiles(files, addTo); });
 
   // ---------- salvar / abrir ----------
@@ -235,7 +254,7 @@
   }
   $("save").addEventListener("click", function () {
     if (!state.cards.length) { say("Adicione cartões antes de salvar."); return; }
-    var data = { app: "visitasc-analisador", version: 1, savedAt: new Date().toISOString(), congregation: state.congregation, period: state.period, studyRule: state.studyRule, groups: state.groups, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards };
+    var data = { app: "visitasc-analisador", version: 1, savedAt: new Date().toISOString(), congregation: state.congregation, period: state.period, year: state.year, studyRule: state.studyRule, groups: state.groups, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards };
     download(JSON.stringify(data), "analise-" + slug(state.congregation) + "-" + today() + ".json", "application/json;charset=utf-8");
     dirty = false; say("");
   });
@@ -256,7 +275,8 @@
         if (ids.indexOf(p.area) < 0) p.area = groups[0].id;
         return p;
       });
-      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", scope: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), cards: cards };
+      var yr = d.year ? Number(d.year) : A.yearOfMonth(d.period && d.period.to);
+      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), cards: cards };
       openAreas = {}; dirty = false; fixPeriod(); say(""); render();
     } catch (err) { say("Este arquivo não é uma análise salva pelo Analisador de congregações."); }
   });

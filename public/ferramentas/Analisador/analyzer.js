@@ -28,12 +28,21 @@
     return keys.length ? monthsBetween(keys[0], keys[keys.length - 1]) : [];
   }
 
-  /** Período padrão: os 6 últimos meses com relatório. */
-  function defaultPeriod(cards) {
-    var r = reportedMonths(cards); if (!r.length) return { from: "", to: "" };
-    var to = r[r.length - 1], from = addMonths(to, -5);
-    return { from: from < r[0] ? r[0] : from, to: to };
+  /** Ano de serviço do cartão: "2025/2026" = 2026 (set/2025 a ago/2026). */
+  function cardYear(p) {
+    var m0 = p.months && p.months[0] && p.months[0].month;
+    if (m0) return +m0.slice(0, 4) + 1;
+    return (S() && S().serviceYearEnd(p.serviceYear)) || null;
   }
+  function serviceYears(cards) {
+    var set = {}; cards.forEach(function (p) { var y = cardYear(p); if (y) set[y] = true; });
+    return Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+  }
+  function periodOf(year) { return year ? { from: (year - 1) + "-09", to: year + "-08" } : { from: "", to: "" }; }
+  /** Ano de serviço de um mês "aaaa-mm" (set em diante = ano seguinte). */
+  function yearOfMonth(k) { return k ? +k.slice(0, 4) + (+k.slice(5, 7) >= 9 ? 1 : 0) : null; }
+  /** Período padrão: o ano de serviço do cartão mais recente. */
+  function defaultPeriod(cards) { var ys = serviceYears(cards); return periodOf(ys[ys.length - 1]); }
 
   /** Cartões → pessoas (cartões da mesma pessoa juntados). Área = área do cartão mais recente. */
   function people(cards) {
@@ -136,6 +145,6 @@
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, people: people, analyze: analyze, fullName: fullName };
+  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, people: people, analyze: analyze, fullName: fullName };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

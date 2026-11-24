@@ -63,3 +63,9 @@
 - [x] Conversor S-21: horas só para pioneiros/P.A., ano 2026/2027 = 2027, exportação TSWin (Active.xml)
 - [x] Conversor S-21: Circuit Manager (.json) e planilha Hourglass corrigida (meses, Regular, células vazias)
 - [x] Analisador de congregações em /ferramentas/Analisador/ (grupos, pioneiros, resumo, listas, anotações, PDF, salvar/abrir)
+
+## Analisador (24/11)
+- [x] Ano de serviço pelo cartão (2026/2027 = 2027), pílulas de ano
+- [x] Grupos em pílulas, Pioneiros reg. à parte, anotações por resumo
+- [x] Trocar cartão (⟳) e reimportar atualiza
+- [ ] Sugestões extras 1-5: aguardando escolha do usuário

@@ -38,8 +38,21 @@ const all = (extra: Record<number, Partial<Month>> = {}) => {
 const P = { from: "2026-03", to: "2026-08" };
 
 describe("Analisador de congregações", () => {
-  it("período padrão: os 6 últimos meses com relatório", () => {
-    expect(A.defaultPeriod([card("Ana Lima", { months: all() })])).toEqual({ from: "2026-03", to: "2026-08" });
+  it("período padrão: ano de serviço do cartão mais recente (2025/2026 = 2026)", () => {
+    expect(A.defaultPeriod([card("Ana Lima", { months: all() })])).toEqual({ from: "2025-09", to: "2026-08" });
+  });
+
+  it("2026/2027, 26/27 e 26/7 = ano de serviço 2027 (set/2026 a ago/2027)", () => {
+    for (const year of ["2026/2027", "26/27", "26/7"]) {
+      const cards = [card("Ana Lima", { months: all() }), card("Ana Lima", { year, months: { 0: { participated: true } } })];
+      expect(A.defaultPeriod(cards)).toEqual({ from: "2026-09", to: "2027-08" });
+    }
+  });
+
+  it("ano 2027 não marca irregular por meses do ano 2026", () => {
+    const cards = [card("Ana Lima", { months: { 3: { participated: false } } }), card("Ana Lima", { year: "2026/2027", months: { 0: { participated: true }, 1: { participated: true } } })];
+    const r = A.analyze(cards, A.defaultPeriod(cards));
+    expect(r.counts["irregular"]).toBe(0);
   });
 
   it("pioneiros auxiliares diferentes: a mesma pessoa conta uma vez", () => {

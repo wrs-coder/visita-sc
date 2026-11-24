@@ -13,31 +13,25 @@
 <header class="top"><h1>Analisador de congregações</h1><p>Os cartões são lidos só neste aparelho. Nada é enviado pela internet.</p></header>
 <main>
   <section class="box">
-    <div class="grid two">
-      <label class="full">Congregação<input id="cong" autocomplete="off" placeholder="Ex.: Central"></label>
-      <label>De<select id="from" aria-label="Primeiro mês do período"></select></label>
-      <label>Até<select id="to" aria-label="Último mês do período"></select></label>
-    </div>
+    <label class="full">Congregação<input id="cong" autocomplete="off" placeholder="Ex.: Central"></label>
+    <div class="pillrow" id="years" role="group" aria-label="Ano de serviço"></div>
     <p class="muted small" id="periodInfo"></p>
   </section>
 
   <p class="msg" id="msg" role="status" hidden></p>
 
-  <div class="sechead"><h2>Grupos de campo</h2><button class="link" id="addGroup">+ Grupo</button></div>
-  <div id="groups"></div>
+  <div class="pillrow tabs" id="tabs" role="tablist" aria-label="Grupos"></div>
 
-  <div class="sechead"><h2>Pioneiros regulares</h2></div>
-  <div id="pioneers"></div>
+  <div id="area"></div>
 
   <section id="summaryBox" hidden>
-    <div class="sechead"><h2>Resumo</h2><select id="scope" class="scope" aria-label="Resumo de"></select></div>
+    <div class="sechead"><h2 id="sumTitle">Resumo</h2></div>
     <div class="tiles" id="tiles"></div>
     <label class="rule">Quem conta como “Dirige estudos”<select id="rule"></select></label>
   </section>
 
-  <section>
-    <div class="sechead"><h2>Anotações do superintendente</h2></div>
-    <div class="box" id="notes"></div>
+  <section class="box">
+    <label class="notefield"><span id="noteTitle">Anotações</span><textarea id="note" placeholder="Escreva aqui…"></textarea></label>
   </section>
 
   <section class="actions">
@@ -48,6 +42,7 @@
   </section>
 
   <input type="file" id="pdfs" accept="application/pdf,.pdf" multiple hidden>
+  <input type="file" id="pdfOne" accept="application/pdf,.pdf" hidden>
   <input type="file" id="openFile" accept="application/json,.json" hidden>
 </main>
 
