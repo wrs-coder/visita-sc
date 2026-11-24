@@ -49,6 +49,7 @@ import { Route as CadastroIndexRouteImport } from './routes/cadastro.index'
 import { Route as CadastroAnciaoRouteImport } from './routes/cadastro.anciao'
 import { Route as CadastroSuperintendenteRouteImport } from './routes/cadastro.superintendente'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
+import { Route as FerramentasAnalisadorRouteImport } from './routes/ferramentas.Analisador'
 import { Route as FerramentasS21_ExportRouteImport } from './routes/ferramentas.S21_Export'
 import { Route as RelogioCodeRouteImport } from './routes/relogio.$code'
 import { Route as VisitanteIndexRouteImport } from './routes/visitante.index'
@@ -259,6 +260,11 @@ const ConfirmarTokenRoute = ConfirmarTokenRouteImport.update({
   path: '/confirmar/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FerramentasAnalisadorRoute = FerramentasAnalisadorRouteImport.update({
+  id: '/ferramentas/Analisador',
+  path: '/ferramentas/Analisador',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FerramentasS21_ExportRoute = FerramentasS21_ExportRouteImport.update({
   id: '/ferramentas/S21_Export',
   path: '/ferramentas/S21_Export',
@@ -334,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/ferramentas/Analisador': typeof FerramentasAnalisadorRoute
   '/ferramentas/S21_Export': typeof FerramentasS21_ExportRoute
   '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByTo {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/ferramentas/Analisador': typeof FerramentasAnalisadorRoute
   '/ferramentas/S21_Export': typeof FerramentasS21_ExportRoute
   '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
@@ -431,6 +439,7 @@ export interface FileRoutesById {
   '/cadastro/anciao': typeof CadastroAnciaoRoute
   '/cadastro/superintendente': typeof CadastroSuperintendenteRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/ferramentas/Analisador': typeof FerramentasAnalisadorRoute
   '/ferramentas/S21_Export': typeof FerramentasS21_ExportRoute
   '/relogio/$code': typeof RelogioCodeRoute
   '/visitante/painel': typeof VisitantePainelRoute
@@ -481,6 +490,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
+    | '/ferramentas/Analisador'
     | '/ferramentas/S21_Export'
     | '/relogio/$code'
     | '/visitante/painel'
@@ -528,6 +538,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
+    | '/ferramentas/Analisador'
     | '/ferramentas/S21_Export'
     | '/relogio/$code'
     | '/visitante/painel'
@@ -577,6 +588,7 @@ export interface FileRouteTypes {
     | '/cadastro/anciao'
     | '/cadastro/superintendente'
     | '/confirmar/$token'
+    | '/ferramentas/Analisador'
     | '/ferramentas/S21_Export'
     | '/relogio/$code'
     | '/visitante/painel'
@@ -600,6 +612,7 @@ export interface RootRouteChildren {
   CadastroAnciaoRoute: typeof CadastroAnciaoRoute
   CadastroSuperintendenteRoute: typeof CadastroSuperintendenteRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
+  FerramentasAnalisadorRoute: typeof FerramentasAnalisadorRoute
   FerramentasS21_ExportRoute: typeof FerramentasS21_ExportRoute
   RelogioCodeRoute: typeof RelogioCodeRoute
   CadastroIndexRoute: typeof CadastroIndexRoute
@@ -889,6 +902,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmarTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ferramentas/Analisador': {
+      id: '/ferramentas/Analisador'
+      path: '/ferramentas/Analisador'
+      fullPath: '/ferramentas/Analisador'
+      preLoaderRoute: typeof FerramentasAnalisadorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ferramentas/S21_Export': {
       id: '/ferramentas/S21_Export'
       path: '/ferramentas/S21_Export'
@@ -1032,6 +1052,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastroAnciaoRoute: CadastroAnciaoRoute,
   CadastroSuperintendenteRoute: CadastroSuperintendenteRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
+  FerramentasAnalisadorRoute: FerramentasAnalisadorRoute,
   FerramentasS21_ExportRoute: FerramentasS21_ExportRoute,
   RelogioCodeRoute: RelogioCodeRoute,
   CadastroIndexRoute: CadastroIndexRoute,
