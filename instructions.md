@@ -1,5 +1,7 @@
 # DIRETRIZES OBRIGATÓRIAS DE ARQUITETURA - VISITA SC
 
+> As Ferramentas do site (Conversor S-21 e Analisador) seguem `instructions-ferramentas.md`; as regras 15 (versão) e 30 (Ajuda) não se aplicam a elas.
+
 ## 1. Regras de Roles (Perfis de Utilizador)
 
 - O 'superintendent' (Superintendente) gerencia o circuito e NÃO possui uma congregação fixa atrelada ao seu perfil. O circuito ativo dele é definido dinamicamente pelas datas do Itinerário.

@@ -31,3 +31,10 @@ describe("isolamento das ferramentas", () => {
     expect(readFileSync(join(ROOT, "scripts", "build-app-shell.mjs"), "utf8")).toMatch(/path\.join\(outDir, "ferramentas"\)/);
   });
 });
+
+describe("instruções das ferramentas", () => {
+  it("existe instructions-ferramentas.md e o instructions.md aponta para ele", () => {
+    expect(readFileSync(join(ROOT, "instructions-ferramentas.md"), "utf8")).toMatch(/FERRAMENTAS DO SITE/);
+    expect(readFileSync(join(ROOT, "instructions.md"), "utf8")).toMatch(/instructions-ferramentas\.md/);
+  });
+});
