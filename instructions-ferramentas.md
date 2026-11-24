@@ -12,7 +12,7 @@ Este arquivo vale só para as ferramentas do site. O aplicativo VisitaSC segue o
 
 ## 3. Proibido
 - Alterar `src/` (salvo a rota acima), a versão do app, as notas de versão ("O que há de novo") ou a Ajuda do app. As regras 15 e 30 do `instructions.md` não se aplicam aqui.
-- Colocar as ferramentas no APK/AAB ou no modo sem internet (`public/sw.js` ignora `/ferramentas/` e `build-app-shell.mjs` remove a pasta).
+- Colocar as ferramentas no APK/AAB ou no modo sem internet do app (`public/sw.js` ignora `/ferramentas/` e `build-app-shell.mjs` remove a pasta). O Analisador tem o seu próprio modo sem internet em `public/ferramentas/Analisador/sw.js`, limitado à pasta dele.
 - Usar Bíblia ou qualquer dado do app.
 
 ## 4. Regras de trabalho (iguais às do app)

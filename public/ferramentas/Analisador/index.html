@@ -80,5 +80,16 @@
 <script src="/ferramentas/S21_Export/converter.js"></script>
 <script src="/ferramentas/Analisador/analyzer.js"></script>
 <script src="/ferramentas/Analisador/app.js"></script>
+<script>
+(function(){ // modo sem internet só desta ferramenta; nunca no preview, iframe ou com ?sw=off
+  if(!("serviceWorker" in navigator)) return;
+  var h=location.hostname.toLowerCase(), off=/[?&]sw=off/.test(location.search);
+  var prev=window.self!==window.top||/(^|\.)lovableproject(-dev)?\.com$/.test(h)||/^(id-preview|preview)(-[a-z0-9]+)?--/.test(h)||/(^|\.)beta\.lovable\.dev$/.test(h);
+  var SW="/ferramentas/Analisador/sw.js";
+  if(off||prev){ navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){var a=r.active||r.installing||r.waiting;if(a&&a.scriptURL.indexOf(SW)>=0)r.unregister();});}); return; }
+  if(!/\/$/.test(location.pathname)) return;
+  window.addEventListener("load",function(){navigator.serviceWorker.register(SW,{scope:"/ferramentas/Analisador/"}).catch(function(){});});
+})();
+</script>
 </body>
 </html>
