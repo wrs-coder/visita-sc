@@ -15,6 +15,8 @@ const an = req("../../public/ferramentas/Analisador/analyzer.js") as Record<stri
 const A = (an && "analyze" in an ? an : g["Analisador"]) as {
   analyze: (c: Card[], o: { from: string; to: string; studyRule?: string; area?: string }) => Result;
   defaultPeriod: (c: Card[]) => { from: string; to: string };
+  lastMonths: (c: Card[], n: number) => { from: string; to: string };
+  periodYears: (f: string, t: string) => number[];
 };
 const S21 = g["S21"] as { fromFields: (f: Record<string, unknown>, file?: string) => Card };
 
@@ -141,5 +143,27 @@ describe("Analisador: importar pastas", () => {
   });
   it("escolher só a pasta do grupo: o nome dela vira o grupo", () => {
     expect(F.folderGroups([{ path: "Grupo 2/a.pdf" }])[0]?.name).toBe("Grupo 2");
+  });
+});
+
+describe("Analisador: período entre dois anos de serviço", () => {
+  // Ana: cartão 2025/2026 completo; cartão 2026/2027 com set e out/2026 (índices 0 e 1).
+  const cards = () => [
+    card("Ana Lima", { months: all() }),
+    card("Ana Lima", { year: "2026/2027", months: { 0: { participated: true }, 1: { participated: true } } }),
+  ];
+  it("mai a out/2026 junta os dois cartões da mesma pessoa e conta 6 meses", () => {
+    const r = A.analyze(cards(), { from: "2026-05", to: "2026-10" });
+    expect(r.months).toEqual(["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"]);
+    expect(r.lists["irregular"]).toEqual([]);
+    expect(A.periodYears("2026-05", "2026-10")).toEqual([2026, 2027]);
+  });
+  it("6 meses termina no último mês com relatório", () => {
+    expect(A.lastMonths(cards(), 6)).toEqual({ from: "2026-05", to: "2026-10" });
+  });
+  it("mês sem pregar no cartão novo conta como irregular no período", () => {
+    const c = cards(); c.push(card("Bia Souza", { months: all() }), card("Bia Souza", { year: "2026/2027", months: { 1: { participated: true } } }));
+    const r = A.analyze(c, { from: "2026-05", to: "2026-10" });
+    expect(r.lists["irregular"]!.map((x) => x.name)).toEqual(["Bia Souza"]);
   });
 });

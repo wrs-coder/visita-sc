@@ -6,7 +6,7 @@
   function uid(prefix) { seq++; return prefix + Date.now().toString(36) + seq; }
 
   var state = blank(), dirty = false, addTo = null, replaceId = null, openAreas = {};
-  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", cards: [] }; }
+  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, preset: "6m", active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", cards: [] }; }
   function touch() { dirty = true; }
 
   function areaName(id) {
@@ -68,16 +68,30 @@
   function fixPeriod() {
     var ys = A.serviceYears(state.cards);
     if (!ys.length) { state.year = null; state.period = { from: "", to: "" }; return; }
+    if (!state.preset) state.preset = "6m";
+    if (state.preset === "custom" && state.period.from && state.period.to) return;
+    if (state.preset === "6m") { state.period = A.lastMonths(state.cards, 6); if (state.period.from) return; state.preset = "year"; }
     if (ys.indexOf(state.year) < 0) state.year = ys[ys.length - 1];
+    state.preset = "year";
     state.period = A.periodOf(state.year);
   }
   function renderPeriod() {
     var ys = A.serviceYears(state.cards);
-    $("years").innerHTML = ys.map(function (y) { return '<button class="pill" data-year="' + y + '" aria-pressed="' + (y === state.year) + '">Ano ' + y + "<small>" + (y - 1) + "/" + y + "</small></button>"; }).join("");
-    $("years").hidden = !ys.length;
+    var pill = function (attr, on, txt) { return '<button class="pill" ' + attr + ' aria-pressed="' + on + '">' + txt + "</button>"; };
+    $("years").innerHTML = pill('data-preset="6m"', state.preset === "6m", "6 meses") +
+      ys.map(function (y) { return pill('data-year="' + y + '"', state.preset === "year" && y === state.year, "Ano " + y + "<small>" + (y - 1) + "/" + y + "</small>"); }).join("") +
+      pill('data-preset="custom"', state.preset === "custom", "Outro");
+    $("years").hidden = !ys.length; $("range").hidden = !ys.length;
     if (!ys.length) { $("periodInfo").textContent = "Adicione os cartões. O ano de serviço vem do cartão: “2026/2027” = ano 2027."; return; }
+    var all = A.coveredMonths(state.cards);
+    [state.period.from, state.period.to].forEach(function (k) { if (k && all.indexOf(k) < 0) all.push(k); });
+    all.sort();
+    var opts = function (sel) { return all.map(function (k) { return '<option value="' + k + '"' + (k === sel ? " selected" : "") + ">" + A.label(k) + "</option>"; }).join(""); };
+    $("pFrom").innerHTML = opts(state.period.from); $("pTo").innerHTML = opts(state.period.to);
+    var n = A.monthsBetween(state.period.from, state.period.to).length;
     var live = A.analyze(state.cards, { from: state.period.from, to: state.period.to }).months.length;
-    $("periodInfo").textContent = "Ano de serviço " + state.year + ": set/" + (state.year - 1) + " a ago/" + state.year + " · " + live + (live === 1 ? " mês" : " meses") + " com relatório.";
+    var yrs = A.periodYears(state.period.from, state.period.to).map(function (y) { return (y - 1) + "/" + y; });
+    $("periodInfo").textContent = periodLabel() + " · " + n + (n === 1 ? " mês" : " meses") + " (" + live + " com relatório) · Usa cartões " + yrs.join(" e ") + ".";
   }
 
   // ---------- cartões ----------
@@ -294,7 +308,15 @@
 
   // ---------- eventos ----------
   $("cong").addEventListener("input", function (e) { state.congregation = e.target.value; touch(); });
-  $("years").addEventListener("click", function (e) { var b = e.target.closest("[data-year]"); if (!b) return; state.year = Number(b.dataset.year); fixPeriod(); touch(); render(); });
+  $("years").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-year],[data-preset]"); if (!b) return;
+    if (b.dataset.year) { state.preset = "year"; state.year = Number(b.dataset.year); } else state.preset = b.dataset.preset;
+    fixPeriod(); touch(); render();
+  });
+  $("range").addEventListener("change", function () {
+    var f = $("pFrom").value, t = $("pTo").value; if (f > t) { var x = f; f = t; t = x; }
+    state.preset = "custom"; state.period = { from: f, to: t }; touch(); render();
+  });
   $("tabs").addEventListener("click", function (e) {
     if (e.target.closest("[data-addgroup]")) {
       var g = { id: uid("g"), name: "Grupo " + (state.groups.length + 1), overseer: "", note: "" };
@@ -366,7 +388,7 @@
   }
   $("save").addEventListener("click", function () {
     if (!state.cards.length) { say("Adicione cartões antes de salvar."); return; }
-    var data = { app: "visitasc-analisador", version: 1, savedAt: new Date().toISOString(), congregation: state.congregation, period: state.period, year: state.year, studyRule: state.studyRule, groups: state.groups, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards };
+    var data = { app: "visitasc-analisador", version: 1, savedAt: new Date().toISOString(), congregation: state.congregation, period: state.period, preset: state.preset, year: state.year, studyRule: state.studyRule, groups: state.groups, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards };
     download(JSON.stringify(data), "analise-" + slug(state.congregation) + "-" + today() + ".json", "application/json;charset=utf-8");
     dirty = false; say("");
   });
@@ -388,7 +410,7 @@
         return p;
       });
       var yr = d.year ? Number(d.year) : A.yearOfMonth(d.period && d.period.to);
-      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), cards: cards };
+      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, preset: d.preset || (d.period && d.period.from ? "custom" : "6m"), active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), cards: cards };
       openAreas = {}; dirty = false; fixPeriod(); say(""); render();
     } catch (err) { say("Este arquivo não é uma análise salva pelo Analisador de congregações."); }
   });

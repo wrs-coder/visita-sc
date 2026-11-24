@@ -60,3 +60,4 @@ table.view tr.inp td{background:var(--bg)}
 table.view tr.out td{opacity:.5}
 .warnc{color:var(--warn);font-weight:700}
 .back{background:var(--bg);color:var(--accent);min-height:40px;padding:0 12px;border-radius:20px;font-weight:600}
+.range{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.range label{display:flex;flex-direction:column;font-size:.85rem;gap:4px}.range select{width:100%;min-width:0}

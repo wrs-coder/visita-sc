@@ -41,6 +41,13 @@
   function periodOf(year) { return year ? { from: (year - 1) + "-09", to: year + "-08" } : { from: "", to: "" }; }
   /** Ano de serviço de um mês "aaaa-mm" (set em diante = ano seguinte). */
   function yearOfMonth(k) { return k ? +k.slice(0, 4) + (+k.slice(5, 7) >= 9 ? 1 : 0) : null; }
+  /** Últimos n meses com relatório na congregação (pode atravessar dois anos de serviço). */
+  function lastMonths(cards, n) {
+    var r = reportedMonths(cards); if (!r.length) return { from: "", to: "" };
+    var to = r[r.length - 1]; return { from: addMonths(to, -(n - 1)), to: to };
+  }
+  /** Anos de serviço tocados por um período. */
+  function periodYears(from, to) { var s = {}; monthsBetween(from, to).forEach(function (k) { s[yearOfMonth(k)] = true; }); return Object.keys(s).map(Number).sort(); }
   /** Período padrão: o ano de serviço do cartão mais recente. */
   function defaultPeriod(cards) { var ys = serviceYears(cards); return periodOf(ys[ys.length - 1]); }
 
@@ -169,6 +176,6 @@
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups };
+  var api = { MES: MES, TILES: TILES, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
