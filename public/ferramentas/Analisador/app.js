@@ -6,7 +6,7 @@
   function uid(prefix) { seq++; return prefix + Date.now().toString(36) + seq; }
 
   var state = blank(), dirty = false, addTo = null, replaceId = null, openAreas = {}, openYear = {}, openPeople = {};
-  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, preset: "6m", active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", done: {}, cards: [] }; }
+  function blank() { return { congregation: "", period: { from: "", to: "" }, studyRule: "last", year: null, preset: "6m", active: "all", groups: [{ id: "g1", name: "Grupo 1", overseer: "", note: "" }], pioneersNote: "", notes: "", done: {}, prDecisions: {}, cards: [] }; }
   var INFO = {}, view = [], pend = {};
   function touch() { dirty = true; scheduleSave(); }
   function effArea(p) { var i = INFO[p.id]; return i && i.inactive ? "in" : p.area; }
@@ -182,7 +182,7 @@
       (g ? '<input data-g="name" value="' + esc(g.name) + '" aria-label="Nome do grupo" placeholder="Nome do grupo">' +
         '<input data-g="overseer" value="' + esc(g.overseer) + '" aria-label="Superintendente do grupo" placeholder="Superintendente do grupo">' : "") +
       '<span class="count">' + count + "</span></div>" +
-      unmarkedHtml(id) + riskHtml(id) +
+      unmarkedHtml(id) + prHtml(id) + riskHtml(id) +
       (id === "in" ? '<p class="muted small">Quem tem a palavra “inativo” no cartão ou 6 meses seguidos ou mais sem pregar. Não conta nos grupos de campo. Volta ao grupo de origem ao recalcular, se voltar a pregar.</p>' : "") +
       '<div class="arow">' + (id === "in" ? "" : '<button class="soft" data-add>⬆ Importar S-21</button>') + '<button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
       '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? A.people(list).sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); }).map(personHtml).join("") : "") + "</div>" +
@@ -206,6 +206,37 @@
     list.sort(function (a, b) { return b.n - a.n || a.name.localeCompare(b.name, "pt"); });
     return '<div class="risk"><strong>⚠ Perigo de ficar inativo (' + list.length + ")</strong>" + list.map(function (x) { return '<button class="item tap" data-person="' + esc(x.id) + '"><strong>' + esc(x.name) + "</strong><small>" + x.n + " meses seguidos sem pregar</small></button>"; }).join("") + "</div>";
   }
+  function prList(id) {
+    return A.prCandidates(state.cards, INFO, state.prDecisions || {}).filter(function (x) { return id === "all" || x.area === id; });
+  }
+  function prHtml(id) {
+    if (id === "rp" || id === "in") return "";
+    var list = prList(id); if (!list.length) return "";
+    return '<div class="risk prcand"><strong>⚠ Possíveis pioneiros regulares (' + list.length + ")</strong>" + list.map(function (x) {
+      var ms = x.months.map(function (m) { return A.label(m).split(" ")[0].slice(0, 3).toLowerCase(); }).join(", ");
+      return '<div class="pritem" data-prkey="' + esc(x.key) + '"><button class="item tap" data-person="' + esc(x.id) + '"><strong>' + esc(x.name) + "</strong><small>" + esc(areaName(x.area)) + " · " + x.months.length + (x.months.length === 1 ? " mês" : " meses") + " entre 35 h e 50 h (" + esc(ms) + ")</small></button>" +
+        '<div class="practs"><button class="primary" data-pr="mark">Marcar como Pioneiro Regular</button><button class="soft" data-pr="pot">Tem potencial para PR</button><button class="link" data-pr="ign">Ignorar</button></div></div>';
+    }).join("") + "</div>";
+  }
+  function addNote(target, line) {
+    function join(t) { t = (t || "").replace(/\s+$/, ""); return t ? t + "\n" + line : line; }
+    if (target === "rp") state.pioneersNote = join(state.pioneersNote);
+    else { var g = state.groups.filter(function (x) { return x.id === target; })[0]; if (g) g.note = join(g.note); else state.notes = join(state.notes); }
+  }
+  function prDecide(key, act) {
+    var x = A.prCandidates(state.cards, INFO, {}).filter(function (c) { return c.key === key; })[0]; if (!x) return;
+    var why = " (" + x.months.length + (x.months.length === 1 ? " mês" : " meses") + " entre 35 h e 50 h)";
+    state.prDecisions = state.prDecisions || {}; state.prDecisions[key] = act;
+    if (act === "mark") {
+      state.cards.forEach(function (p) { if (A.fullName(p).toLowerCase() === key) { p.status = "Regular Pioneer"; p.area = "rp"; } });
+      addNote("rp", x.name + " — ajustado(a) como Pioneiro Regular" + why);
+      say(x.name + " agora está em Pioneiros regulares. Anotação registrada.");
+    } else if (act === "pot") {
+      addNote(x.area, x.name + " — tem potencial para pioneiro regular" + why);
+      say("Anotação registrada nas observações de " + areaName(x.area) + ".");
+    }
+    recalc(); touch(); fixPeriod(); render();
+  }
   /** Geral: todas as pessoas, separadas por grupo, Pioneiros regulares e Inativos. */
   function allHtml() {
     if (!state.cards.length) return "";
@@ -215,7 +246,7 @@
       var ppl = A.people(list).sort(function (x, y) { return x.name.localeCompare(y.name, "pt"); });
       return '<p class="divider">' + esc(a.name) + " (" + ppl.length + ")</p>" + ppl.map(personHtml).join("");
     }).join("") : "";
-    return '<div class="area" data-a="all">' + riskHtml("all") + '<div class="arow"><button class="soft" data-view aria-expanded="' + open + '">' + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
+    return '<div class="area" data-a="all">' + prHtml("all") + riskHtml("all") + '<div class="arow"><button class="soft" data-view aria-expanded="' + open + '">' + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
       '<div class="cards"' + (open ? "" : " hidden") + ">" + body + "</div></div>";
   }
 
@@ -247,7 +278,7 @@
   // ---------- totais mensais ----------
   function renderTotals() {
     var box = $("totalsBox");
-    if (!state.cards.length) { box.hidden = true; return; }
+    if (!state.cards.length || state.active === "in") { box.hidden = true; return; }
     var t = A.monthlyTotals(view, { from: state.period.from, to: state.period.to, area: state.active });
     box.hidden = !t.months.length; if (!t.months.length) return;
     var secs = A.TOTAL_SECTIONS.filter(function (s) { return state.active === "in" ? s.key !== "rp" : state.active === "rp" ? s.key === "rp" : state.active === "all" ? true : s.key !== "rp"; });
@@ -290,8 +321,21 @@
   }
 
   // ---------- resumo ----------
-  function tilesFor() { return state.active === "rp" ? A.RP_TILES : A.TILES; }
+  var IN_TILES = [{ key: "inBap", label: "Inativos Batizados", list: true }, { key: "inUnbap", label: "Inativos Não Batizados", list: true }];
+  function tilesFor() { return state.active === "rp" ? A.RP_TILES : state.active === "in" ? IN_TILES : A.TILES; }
+  function inactiveAnalysis() {
+    var seen = {}, lists = { inBap: [], inUnbap: [] };
+    state.cards.forEach(function (p) {
+      var i = INFO[p.id]; if (!i || !i.inactive) return;
+      var k = A.fullName(p).toLowerCase(); if (seen[k]) return; seen[k] = 1;
+      var unb = p.status === "Unbaptized Publisher" && !p.baptism;
+      (unb ? lists.inUnbap : lists.inBap).push({ id: p.id, name: A.fullName(p), area: p.area, detail: i.reason });
+    });
+    Object.keys(lists).forEach(function (k) { lists[k].sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); }); });
+    return { counts: { inBap: lists.inBap.length, inUnbap: lists.inUnbap.length }, lists: lists };
+  }
   function analysis(scope) {
+    if (scope === "in") return inactiveAnalysis();
     if ((scope || "all") === "rp") return A.analyzeRp(view, { from: state.period.from, to: state.period.to, studyRule: state.studyRule }, rpYear());
     return A.analyze(view, { from: state.period.from, to: state.period.to, studyRule: state.studyRule, area: scope || "all" });
   }
@@ -299,6 +343,7 @@
     $("summaryBox").hidden = !state.cards.length;
     $("sumTitle").textContent = "Resumo — " + (state.active === "all" ? "Geral (toda a congregação)" : areaName(state.active));
     $("rule").innerHTML = A.STUDY_RULES.map(function (r) { return '<option value="' + r.key + '"' + (r.key === state.studyRule ? " selected" : "") + ">" + esc(r.label) + "</option>"; }).join("");
+    $("rule").closest("label").hidden = state.active === "in";
     if (!state.cards.length) return;
     var r = analysis(state.active);
     $("tiles").innerHTML = tilesFor().map(function (t) {
@@ -509,7 +554,8 @@
     var el = e.target, id = areaOf(el); if (!id) return;
     if (e.type === "click") {
       var per = el.closest("[data-person]"); if (per) { lastList = null; openPerson(per.dataset.person); return; }
-      if (el.closest("[data-apply]")) { recalc(); touch(); render(); say("Mudanças aplicadas. Os números foram recalculados."); return; }
+      if (el.closest("[data-apply]")) { applyNow(el.closest(".card")); return; }
+      var prb = el.closest("[data-pr]"); if (prb) { prDecide(prb.closest("[data-prkey]").dataset.prkey, prb.dataset.pr); return; }
       if (el.closest("[data-markrp]")) { var mc = state.cards.filter(function (x) { return x.id === el.closest(".card").dataset.id; })[0]; if (mc) { mc.status = "Regular Pioneer"; recalc(); touch(); render(); } return; }
       if (el.closest("[data-markall]")) { state.cards.forEach(function (x) { if (x.area === "rp") x.status = "Regular Pioneer"; }); recalc(); touch(); render(); return; }
       if (el.closest("[data-add]")) { addTo = id; $("pdfs").click(); return; }
@@ -559,6 +605,16 @@
       var bar = card.querySelector(".pendbar"); if (bar) bar.hidden = false;
     }
   }
+  function applyNow(cardEl) {
+    var cid = cardEl && cardEl.dataset.id, a = document.activeElement;
+    if (a && a !== document.body && a.blur) a.blur();
+    recalc(); touch(); render();
+    say("Mudanças aplicadas. Os números foram recalculados.");
+    var c = cid && document.querySelector('.card[data-id="' + cid + '"]');
+    if (c) { c.open = true; var bar = c.querySelector(".pendbar"); if (bar) { bar.hidden = false; bar.classList.add("okbar"); bar.innerHTML = "<span>✓ Mudanças aplicadas</span>"; setTimeout(function () { bar.hidden = true; }, 2000); } }
+  }
+  // O toque no botão chega antes de o campo editado perder o foco (que redesenha a tela e "engolia" o clique).
+  $("area").addEventListener("pointerdown", function (e) { var b = e.target.closest("[data-apply]"); if (b) { e.preventDefault(); applyNow(b.closest(".card")); } });
   $("area").addEventListener("click", onAreas); $("area").addEventListener("change", onAreas);
   $("pdfOne").addEventListener("change", function (e) { var f = e.target.files[0]; e.target.value = ""; if (replaceId && f) replaceCard(replaceId, f); replaceId = null; });
   $("pdfs").addEventListener("change", function (e) { var files = Array.from(e.target.files); e.target.value = ""; if (addTo && files.length) addFiles(files, addTo); });
@@ -600,7 +656,7 @@
         return p;
       });
       var yr = d.year ? Number(d.year) : A.yearOfMonth(d.period && d.period.to);
-      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, preset: d.preset || (d.period && d.period.from ? "custom" : "6m"), active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), done: d.done && typeof d.done === "object" ? d.done : {}, cards: cards };
+      state = { congregation: String(d.congregation || ""), period: d.period || { from: "", to: "" }, studyRule: d.studyRule || "last", year: yr, preset: d.preset || (d.period && d.period.from ? "custom" : "6m"), active: "all", groups: groups, pioneersNote: String(d.pioneersNote || ""), notes: String(d.notes || ""), done: d.done && typeof d.done === "object" ? d.done : {}, prDecisions: d.prDecisions && typeof d.prDecisions === "object" ? d.prDecisions : {}, cards: cards };
       if (d.active) state.active = String(d.active);
       openAreas = {}, openYear = {}, openPeople = {}; recalc(); fixPeriod(); scheduleSave();
   }
@@ -617,7 +673,7 @@
     function tx(mode, fn) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction("kv", mode), st = t.objectStore("kv"), q = fn(st); t.oncomplete = function () { res(q && q.result); }; t.onerror = function () { rej(t.error); }; }); }); }
     return { get: function () { return tx("readonly", function (s) { return s.get("state"); }); }, put: function (v) { return tx("readwrite", function (s) { s.put(v, "state"); }); }, del: function () { return tx("readwrite", function (s) { s.delete("state"); }); } };
   })();
-  function snapshot() { return { app: "visitasc-analisador", version: 1, congregation: state.congregation, period: state.period, preset: state.preset, year: state.year, studyRule: state.studyRule, active: state.active, groups: state.groups, done: state.done, pioneersNote: state.pioneersNote, notes: state.notes, cards: state.cards }; }
+  function snapshot() { return { app: "visitasc-analisador", version: 1, congregation: state.congregation, period: state.period, preset: state.preset, year: state.year, studyRule: state.studyRule, active: state.active, groups: state.groups, done: state.done, pioneersNote: state.pioneersNote, notes: state.notes, prDecisions: state.prDecisions, cards: state.cards }; }
   function scheduleSave() {
     clearTimeout(saveT);
     saveT = setTimeout(function () {

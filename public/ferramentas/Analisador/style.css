@@ -113,3 +113,7 @@ table.view tr.out td{opacity:.5}
 
 .installbtn{display:block;margin:10px auto 0;padding:12px 18px;border:0;border-radius:14px;background:#2a5c9e;color:#fff;font:inherit;font-weight:600;cursor:pointer}
 .installbtn[hidden]{display:none}
+
+.prcand .pritem{display:flex;flex-direction:column;gap:6px;padding:6px 0;border-top:1px solid var(--line)}
+.prcand .practs{display:flex;flex-wrap:wrap;gap:6px}
+.pendbar.okbar span{font-weight:600}

@@ -408,12 +408,25 @@
     r.counts.elderRp = r.counts.elder; r.counts.msRp = r.counts.ms; r.counts.below = below.length;
     return r;
   }
+  /** Possíveis pioneiros regulares: não marcados como PR, não inativos, com meses entre 35 h e 50 h (50 não entra). */
+  function prCandidates(cards, info, decisions) {
+    info = info || {}; decisions = decisions || {};
+    var by = {};
+    cards.forEach(function (p) {
+      var k = fullName(p).toLowerCase(); if (!k) return;
+      var e = by[k] = by[k] || { key: k, name: fullName(p), id: p.id, area: p.area, skip: false, months: [] };
+      if (p.status === "Regular Pioneer" || p.area === "rp" || (info[p.id] && info[p.id].inactive)) e.skip = true;
+      (p.months || []).forEach(function (m) { var h = m.hours; if (typeof h === "number" && h >= 35 && h < 50 && m.month && e.months.indexOf(m.month) < 0) e.months.push(m.month); });
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).filter(function (e) { return !e.skip && e.months.length && !decisions[e.key]; })
+      .map(function (e) { e.months.sort(); delete e.skip; return e; }).sort(function (x, y) { return x.name.localeCompare(y.name, "pt"); });
+  }
   var STUDY_RULES = [
     { key: "last", label: "Relatou estudos no último mês do período" },
     { key: "last3", label: "Relatou estudos nos 3 últimos meses seguidos" },
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap };
+  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap, prCandidates: prCandidates };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

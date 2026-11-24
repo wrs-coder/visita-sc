@@ -56,3 +56,5 @@ Este arquivo vale só para as ferramentas do site. O aplicativo VisitaSC segue o
 - Datas de qualquer formato (inclusive por extenso) viram dd/mm/aaaa; data não entendida vira aviso.
 - Resumos só mudam ao tocar "Aplicar mudanças" ou "Recalcular dados". Tudo fica guardado no aparelho; só "Limpar tudo" apaga.
 - Meta dos pioneiros mostra os meses abaixo de 50 h com horas e observação.
+
+- Analisador: alerta "Possíveis pioneiros regulares" para quem não é PR nem inativo e tem mês com 35 h ≤ horas < 50 h; a decisão (marcar PR / potencial / ignorar) fica salva e vira anotação do superintendente. A aba Inativos mostra só os cards "Inativos Batizados" e "Inativos Não Batizados", sem Totais mensais.
