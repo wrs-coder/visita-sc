@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Pencil, Loader2 } from "lucide-react";
+import { Pencil, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DAY_KEYS, customSlotLabel, visitWeekdays, slotTaken } from "@/lib/pastoral-slots";
 import { parseSlotLabel } from "@/lib/pastoral-dispatch";
 
-export function PastoralSlotEditor({ current, start, end, used, disabled, onSave }: {
+export function PastoralSlotEditor({ current, start, end, used, disabled, onSave, addLabel }: {
+  /** Quando definido, mostra um botão "+ texto" e cria um horário novo em vez de editar. */
+  addLabel?: string;
   current: string | null;
   start: string;
   end: string;
@@ -45,15 +47,21 @@ export function PastoralSlotEditor({ current, start, end, used, disabled, onSave
     save.mutate(label);
   };
   return <>
+    {addLabel ? (
+      <Button type="button" variant="outline" size="sm" className="flex-1 rounded-full" disabled={disabled} onClick={() => changeOpen(true)}>
+        <Plus className="h-4 w-4 mr-1" /> {addLabel}
+      </Button>
+    ) : (
     <Button type="button" variant="ghost" size="icon" className="shrink-0" disabled={disabled}
       aria-label={t("elderProgram.editSlot")} title={t("elderProgram.editSlot")} onClick={() => changeOpen(true)}>
       <Pencil className="h-4 w-4" />
     </Button>
+    )}
     <Dialog open={open} onOpenChange={changeOpen}>
       <DialogContent className="w-[calc(100%-2rem)] max-h-[85dvh] overflow-y-auto rounded-lg">
         <DialogHeader>
-          <DialogTitle>{t("elderProgram.editSlot")}</DialogTitle>
-          <DialogDescription>{current || t("elderProgram.noSlot")}</DialogDescription>
+          <DialogTitle>{addLabel ? "Novo horário de pastoreio" : t("elderProgram.editSlot")}</DialogTitle>
+          <DialogDescription>{addLabel ? "Vale só para esta visita. O modelo não muda." : (current || t("elderProgram.noSlot"))}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -74,7 +82,7 @@ export function PastoralSlotEditor({ current, start, end, used, disabled, onSave
           <Button type="button" variant="outline" disabled={save.isPending} onClick={() => changeOpen(false)}>{t("common.cancel")}</Button>
           <Button type="button" disabled={!label || disabled || save.isPending} onClick={submit}>
             {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t(conflict ? "elderProgram.confirmSlot" : "meetingsTalks.saveData")}
+            {addLabel ? "Adicionar" : t(conflict ? "elderProgram.confirmSlot" : "meetingsTalks.saveData")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -173,3 +173,42 @@ export const deleteElderProgramEvent = createServerFn({ method: "POST" })
     if (res.error) return { ok: false as const, error: res.error.message };
     return { ok: true as const, error: null };
   });
+
+/** Só o superintendente cria um pastoreio extra nesta visita (o modelo não muda). */
+export const createElderPastoralVisit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ visitId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = getAdmin();
+    const auth = await ensureCanEdit(supabaseAdmin, context.userId, data.visitId);
+    if (!auth.ok) return { ok: false as const, error: auth.error, row: null };
+    if (!auth.isSuper) return { ok: false as const, error: "Apenas o superintendente pode adicionar pastoreios.", row: null };
+    const { data: rows } = await supabaseAdmin
+      .from("elder_pastoral_visits").select("sort_order").eq("visit_id", data.visitId).order("sort_order", { ascending: false }).limit(1);
+    const next = ((rows?.[0]?.sort_order as number | null) ?? -1) + 1;
+    const { data: row, error } = await supabaseAdmin
+      .from("elder_pastoral_visits")
+      .insert({ visit_id: data.visitId, source: "manual", sort_order: next })
+      .select("*").single();
+    if (error || !row) return { ok: false as const, error: error?.message ?? "Falha.", row: null };
+    return { ok: true as const, error: null, row: toDTO(row as Record<string, unknown>, "pastoral") };
+  });
+
+/** Só o superintendente acrescenta um horário de pastoreio nesta visita (o modelo não muda). */
+export const addElderVisitSlot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ visitId: z.string().uuid(), label: z.string().trim().min(3).max(60) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = getAdmin();
+    const auth = await ensureCanEdit(supabaseAdmin, context.userId, data.visitId);
+    if (!auth.ok) return { ok: false as const, error: auth.error };
+    if (!auth.isSuper) return { ok: false as const, error: "Apenas o superintendente pode adicionar horários." };
+    const { data: rows } = await supabaseAdmin
+      .from("elder_program_visit_slots").select("label,sort_order").eq("visit_id", data.visitId).order("sort_order", { ascending: false });
+    if ((rows ?? []).some((r) => r.label === data.label)) return { ok: true as const, error: null };
+    const next = ((rows?.[0]?.sort_order as number | null) ?? -1) + 1;
+    const { error } = await supabaseAdmin
+      .from("elder_program_visit_slots").insert({ visit_id: data.visitId, label: data.label, sort_order: next });
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, error: null };
+  });

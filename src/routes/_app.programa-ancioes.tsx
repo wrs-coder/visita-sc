@@ -21,6 +21,8 @@ import {
   createElderRecommendation,
   createElderLocalMatter,
   deleteElderProgramEvent,
+  createElderPastoralVisit,
+  addElderVisitSlot,
   type ElderVisitEventDTO,
 } from "@/lib/elder-program.functions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -110,6 +112,8 @@ function Page() {
   const fnCreateRec = useServerFn(createElderRecommendation);
   const fnCreateLocal = useServerFn(createElderLocalMatter);
   const fnDelete = useServerFn(deleteElderProgramEvent);
+  const fnCreatePastoral = useServerFn(createElderPastoralVisit);
+  const fnAddSlot = useServerFn(addElderVisitSlot);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -241,6 +245,23 @@ function Page() {
     setListFor("local", [...listFor("local"), r.row]);
   };
 
+  const addPastoral = async () => {
+    const r = await fnCreatePastoral({ data: { visitId: visit.id } });
+    if (!r.ok || !r.row) { toast.error(r.error ?? "Erro"); return; }
+    setPastoral((rows) => [...rows, r.row]);
+    setPDay("__all__");
+    toast.success("Pastoreio adicionado");
+  };
+
+  const addSlot = async (label: string): Promise<boolean> => {
+    if (slots.includes(label)) { toast.success("Este horário já está na lista"); return true; }
+    const r = await fnAddSlot({ data: { visitId: visit.id, label } });
+    if (!r.ok) { toast.error(r.error ?? "Erro"); return false; }
+    setSlots((s) => [...s, label]);
+    toast.success("Horário adicionado");
+    return true;
+  };
+
   const deleteEvent = async (ev: ElderVisitEventDTO) => {
     if (!await appConfirm("Excluir este card?")) return;
     const r = await fnDelete({ data: { id: ev.id, visitId: visit.id, section: ev.section } });
@@ -358,6 +379,15 @@ function Page() {
                     <MissingBadge count={events.reduce((n, e) => n + (e.subject?.trim() ? 0 : 1) + (e.info?.trim() ? 0 : 1), 0)} />
                   )}
 
+                  {section === "pastoral" && isSuper && canEdit && (
+                    <div className="flex gap-2">
+                      <PastoralSlotEditor addLabel="Novo horário" current={null} start={visit.start_date} end={visit.end_date}
+                        used={new Set(availableSlots)} disabled={false} onSave={addSlot} />
+                      <Button type="button" variant="outline" size="sm" className="flex-1 rounded-full" onClick={addPastoral}>
+                        <Plus className="h-4 w-4 mr-1" /> Pastoreio
+                      </Button>
+                    </div>
+                  )}
                   {isSuper && (section === "pastoral" || section === "recommendations") && events.length > 1 && (
                     <Button type="button" variant="outline" size="sm" className="w-full"
                       onClick={() => openDispatch(events.filter((e) => section !== "pastoral" || !!e.family_name), true)}>
@@ -410,6 +440,11 @@ function Page() {
                     </div>
                   )}
 
+                  {section === "pastoral" && isSuper && canEdit && (
+                    <Button type="button" variant="outline" size="sm" className="w-full" onClick={addPastoral}>
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar visita de pastoreio
+                    </Button>
+                  )}
                   {canAddManual && (
                     <Button type="button" variant="outline" size="sm" onClick={section === "local" ? addLocalMatter : addRecommendation}>
                       <Plus className="h-4 w-4 mr-1" /> Adicionar
