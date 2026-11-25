@@ -5,6 +5,16 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { readGuestSession } from "@/lib/guest-session";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Visita SC — Acesso ao programa de visitas" },
+      { name: "description", content: "Acesse o Visita SC para consultar e organizar a programação das visitas de circuito." },
+      { property: "og:title", content: "Visita SC — Acesso ao programa de visitas" },
+      { property: "og:description", content: "Acesse o Visita SC para consultar e organizar a programação das visitas de circuito." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: HomeRoute,
 });
 

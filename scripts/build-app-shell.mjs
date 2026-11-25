@@ -11,7 +11,7 @@
  * O arquivo só é aceito se for realmente uma página com script de inicialização
  * e se TODOS os arquivos citados existirem dentro de `dist-app/`.
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cp, mkdir, readFile, rm, writeFile, readdir } from "node:fs/promises";
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
@@ -447,6 +447,14 @@ try {
     JSON.stringify({ version: pkgJson.version, builtAt: new Date().toISOString() }),
     "utf8",
   );
+
+  // Todos os comandos Android passam por aqui, inclusive release APK/AAB.
+  const packageCheck = spawnSync(process.execPath, [path.join(root, "scripts", "check-shell-fresh.mjs")], {
+    cwd: root,
+    stdio: "inherit",
+  });
+  if (packageCheck.error) throw packageCheck.error;
+  if (packageCheck.status !== 0) throw new Error("Pacote Android bloqueado pela conferência de versão e isolamento.");
 
   console.log(
     `✅ Casca local pronta em dist-app/ (origem: ${shell.source}, copiada de ${path.relative(

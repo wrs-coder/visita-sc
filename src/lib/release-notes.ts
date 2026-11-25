@@ -104,16 +104,33 @@ const OLD_SECTIONS: ReleaseSection[] = [
   },
 ];
 
-export const RELEASE_NOTES_VERSION = "6.0.0";
+export const RELEASE_NOTES_VERSION = "6.0.2";
 
 /**
- * Aviso automático "O que há de novo" (5.7.0: ligado, só para superintendentes).
+ * Aviso automático "O que há de novo", respeitando o público da versão atual.
  * O texto continua em Configurações → Ver novidades e no aviso de atualização.
  * Troque para true para voltar a abrir sozinho na primeira abertura após atualizar.
  */
 export const WHATS_NEW_AUTO_SHOW = true;
 
 export const RELEASE_HISTORY: ReleaseEntry[] = [
+  {
+    version: "6.0.2",
+    sections: [
+      {
+        title: "Pastoreio flexível", audience: ["super"],
+        items: [
+          "Adicione horários personalizados e novas visitas de pastoreio direto na semana da visita, mantendo o seu modelo padrão intacto.",
+        ],
+      },
+      {
+        title: "Companhia e Serviço de campo", audience: ["super"],
+        items: [
+          "Agora com nova identificação \"Companhia (Ministério)\", escolha de modalidade (Estudo, Revisita, etc.), opção \"Outro\" com texto livre e modo completo de edição pelo SC na visita.",
+        ],
+      },
+    ],
+  },
   {
     version: "6.0.0",
     subtitle: "Controle de tempo da reunião, Quadro de anúncios e a nova Pauta da reunião com os anciãos.",
@@ -557,6 +574,15 @@ export const AUDIENCE_LABEL: Record<ReleaseAudience, string> = {
 
 export function sectionAudience(s: ReleaseSection): ReleaseAudience[] {
   return s.audience && s.audience.length ? s.audience : ["all"];
+}
+
+/** O aviso automático só abre para o público das novidades atuais. */
+export function hasReleaseForAudience(sections: ReleaseSection[], viewer: ReleaseAudience | null): boolean {
+  if (!viewer) return false;
+  return sections.some((section) => {
+    const audience = sectionAudience(section);
+    return audience.includes("all") || audience.includes(viewer);
+  });
 }
 
 /** Separa as seções do perfil atual (primeiro) das de outros perfis. */

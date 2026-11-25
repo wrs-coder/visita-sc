@@ -24,6 +24,7 @@ import {
   AUDIENCE_LABEL,
   sectionAudience,
   splitByAudience,
+  hasReleaseForAudience,
   type ReleaseAudience,
   type ReleaseSection,
 } from "@/lib/release-notes";
@@ -112,8 +113,7 @@ export function WhatsNewDialog() {
   // ficar escondida atrás da tela de PIN/biometria.
   const signedIn = !!user;
   useEffect(() => {
-    // 6.0.0: abre sozinho para o superintendente e para os anciãos (conta ou código).
-    const eligible = (signedIn && (role === "superintendent" || role === "elder")) || elderGuest;
+    const eligible = (signedIn || elderGuest) && hasReleaseForAudience(current.sections, viewer);
     if (!isNativeApp() || !eligible) return;
     let cancelled = false;
     void (async () => {
@@ -140,7 +140,7 @@ export function WhatsNewDialog() {
     return () => {
       cancelled = true;
     };
-  }, [signedIn, previousUse, role, elderGuest]);
+  }, [signedIn, previousUse, role, elderGuest, viewer]);
 
   const close = (next: boolean) => {
     if (next) return;

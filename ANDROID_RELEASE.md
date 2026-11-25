@@ -94,9 +94,11 @@ locais do aplicativo.
 
 ## 5. Gerar o APK ou o AAB assinado
 
-Versão preparada neste repositório: **4.1.4** (`versionCode 7`). Esta versão
-corrige o login da casca local, incluindo os cabeçalhos das chamadas internas
-no CORS e a troca automática entre os três endereços publicados.
+Versão preparada neste repositório: **6.0.2** (`versionCode 51`). Novidades
+exclusivas para o SC: Pastoreio flexível e Companhia/Serviço de campo.
+O empacotamento remove as ferramentas do site e bloqueia APK/AAB se encontrar
+resíduos delas nos arquivos finais. A versão está preparada no código; gerar,
+assinar e enviar o AAB à Play Console continuam sendo etapas separadas.
 
 ```bash
 # AAB (formato exigido pela Play Store)

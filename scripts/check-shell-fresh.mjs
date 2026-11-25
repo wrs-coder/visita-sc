@@ -8,6 +8,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
+const packageDir = path.join(root, "dist-app");
 const infoFile = path.join(root, "dist-app", "build-info.json");
 const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 
@@ -32,6 +33,24 @@ if (info.version !== pkg.version) {
   fail(`As telas em dist-app/ são da versão ${info.version}, mas o app está na ${pkg.version}.`);
 }
 
+// Inspeciona arquivos reais, mesmo se uma ferramenta for copiada fora da pasta.
+const toolMarkers = /S21_Export|\/ferramentas\/Analisador|Conversor S-21|Analisador de congregações/i;
+function checkIsolation(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    const relative = path.relative(packageDir, full).replaceAll("\\", "/");
+    if (entry.isSymbolicLink()) fail(`Link simbólico não permitido no pacote: ${relative}.`);
+    if (/(^|\/)(ferramentas|S21_Export|Analisador)(\/|$)/i.test(relative)) {
+      fail(`Ferramenta do site encontrada no pacote Android: ${relative}.`);
+    }
+    if (entry.isDirectory()) checkIsolation(full);
+    else if (/\.(html?|[cm]?js|json|css|webmanifest|map)$/i.test(entry.name) && toolMarkers.test(readFileSync(full, "utf8"))) {
+      fail(`Conteúdo de ferramenta do site encontrado no pacote Android: ${relative}.`);
+    }
+  }
+}
+checkIsolation(packageDir);
+
 function newestMtime(dir) {
   let max = 0;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -52,4 +71,4 @@ if (Number.isFinite(builtAt) && srcNewest > builtAt + 2 * 60 * 1000) {
   );
 }
 
-console.log(`✅ Telas em dist-app/ conferidas: versão ${info.version}, geradas em ${new Date(builtAt).toLocaleString("pt-BR")}.`);
+console.log(`✅ Telas em dist-app/ conferidas: versão ${info.version}, geradas em ${new Date(builtAt).toLocaleString("pt-BR")}; ferramentas do site ausentes.`);

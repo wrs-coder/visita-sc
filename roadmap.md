@@ -85,6 +85,12 @@
 - [x] Padronizar horários dos pioneiros (cópia antiga sincronizada, relatórios sem horário duplicado, sem meia-noite forçada, aviso de erro ao salvar)
 - [x] Corrigir impressão do relatório da visita (no app abre o PDF)
 - [ ] Aumentar fonte dos campos do Pastoreio dos anciãos; aguarda mockup aprovado
-- [ ] Conferir temas escuros e configuração do telefone; aguarda esclarecimento de qual configuração foi citada
 - [x] SP-172: horário salvo não volta (Estudos/Refeições); reaplicar modelo não duplica turnos
 - [ ] SP-172: aviso quando a visita não inclui domingo; aguarda mockup aprovado
+
+## Preparação Play Store — 6.0.2
+- [x] Atualizar versão para 6.0.2 e versionCode 51.
+- [x] Novidades aprovadas: Pastoreio e Companhia/Serviço de campo; aviso automático só para SC.
+- [x] Conferência obrigatória de isolamento em todos os comandos de empacotamento Android.
+- [x] 960 testes aprovados; aviso e botão Entendi conferidos na conta do SC (393×752 e 1366×900); verificação automática sem erros.
+- [ ] Gerar e inspecionar AAB assinado; depende do ambiente Android e da chave de upload local.
