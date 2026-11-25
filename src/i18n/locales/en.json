@@ -699,6 +699,14 @@
     }
   },
   "elderProgram": {
+    "editSlot": "Edit shepherding day/time",
+    "slotDay": "Day",
+    "slotTime": "Time",
+    "noSlot": "No day/time",
+    "slotConflict": "Another shepherding visit already uses this day and time. Confirm anyway?",
+    "confirmSlot": "Confirm and save",
+    "slotSaved": "Shepherding day and time saved",
+    "slotSaveFailed": "Could not save. Check your connection and try again; your edit is still open.",
     "title": "Shepherding, Recommendations & Others",
     "subtitleSuper": "Set up shepherding, encouragement, recommendations and local matters events for the visit.",
     "subtitleElder": "Edit shepherding, encouragement, recommendations and local matters data set by the superintendent."

@@ -3,7 +3,10 @@ import { appConfirm } from "@/components/ui/app-dialogs";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
 import { ChecklistPanel } from "@/components/visit-week/ChecklistPanel";
 import { slotDay, slotDays } from "@/lib/slot-day";
-import { slotState, nextEventWithoutSlot, pickElderSlot, NO_SLOT } from "@/lib/pastoral-slots";
+import { slotState, nextEventWithoutSlot, pickElderSlot, NO_SLOT, visitSlotOptions, slotTaken } from "@/lib/pastoral-slots";
+import { PastoralSlotEditor } from "@/components/elder-program/PastoralSlotEditor";
+import { useQueryClient } from "@tanstack/react-query";
+import { getRow, patchMirrorRow } from "@/lib/local-db";
 import { createFileRoute } from "@tanstack/react-router";
 import { readFnWithMirrorSafe } from "@/lib/local-first";
 import { useEffect, useState, useCallback } from "react";
@@ -47,6 +50,14 @@ import { ElderTabPasswordCard } from "@/components/elder-program/ElderTabPasswor
 import { SupervisorEditToggle } from "@/components/SupervisorEditToggle";
 
 export const Route = createFileRoute("/_app/programa-ancioes")({
+  head: () => ({ meta: [
+    { title: "Pastoreios e recomendações | Visita SC" },
+    { name: "description", content: "Organize os pastoreios, dias e horários, encorajamento e recomendações da semana da visita." },
+    { property: "og:title", content: "Pastoreios e recomendações | Visita SC" },
+    { property: "og:description", content: "Programa de pastoreios e recomendações da semana da visita." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (s: Record<string, unknown>): { tab?: ElderTab } => {
     const v = s.tab;
     return typeof v === "string" && (ELDER_TABS as string[]).includes(v) ? { tab: v as ElderTab } : {};
@@ -101,6 +112,7 @@ function Page() {
   const fnDelete = useServerFn(deleteElderProgramEvent);
 
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   // Envio ao Cronograma / Notas Privadas: fica nesta tela (folha + aviso).
   const [dispatchOpen, setDispatchOpen] = useState<{ events: ElderVisitEventDTO[]; batch: boolean } | null>(null);
   const [dispatchedIds, setDispatchedIds] = useState<Set<string>>(new Set());
@@ -154,8 +166,9 @@ function Page() {
   const [pDay, setPDay] = useState<string>("__all__");
   useEffect(() => { if (pDay !== "__all__" && !pastoralDays.includes(pDay)) setPDay("__all__"); }, [pastoralDays.join(","), pDay]);
 
-  const elderUsed = slots.filter((s) => pastoral.some((p) => p.slot_label === s));
-  const unslotted = pastoral.filter((p) => !p.slot_label || !slots.includes(p.slot_label));
+  const availableSlots = visitSlotOptions(slots, pastoral);
+  const elderUsed = availableSlots.filter((s) => pastoral.some((p) => p.slot_label === s));
+  const unslotted = pastoral.filter((p) => !p.slot_label || !availableSlots.includes(p.slot_label));
   const [elderSlotRaw, setElderSlot] = useState<string | null>(null);
   const elderSlot = pickElderSlot(elderUsed, elderSlotRaw, unslotted.length > 0);
 
@@ -190,6 +203,30 @@ function Page() {
     for (const k of allowed) if (k in patch) cleanPatch[k] = (patch as Record<string, unknown>)[k];
     const r = await fnUpdate({ data: { id: ev.id, visitId: visit.id, section: ev.section, patch: cleanPatch } });
     if (!r.ok) toast.error(r.error);
+  };
+
+  const savePastoralSlot = async (ev: ElderVisitEventDTO, label: string): Promise<boolean> => {
+    if (!isSuper || !canEdit || ev.visit_id !== visit.id) return false;
+    try {
+      const r = await fnUpdate({ data: { id: ev.id, visitId: visit.id, section: "pastoral", patch: { slot_label: label } } });
+      if (!r.ok) { toast.error(t("elderProgram.slotSaveFailed")); return false; }
+      setPastoral((rows) => rows.map((row) => row.id === ev.id ? { ...row, slot_label: label } : row));
+      try {
+        await patchMirrorRow("elder_pastoral_visits", ev.id, { slot_label: label });
+        const key = `elder-program:${visit.id}`;
+        const cached = await getRow<{ id: string; payload: { pastoral: ElderVisitEventDTO[] } }>("__fn_cache__", key);
+        if (cached?.payload?.pastoral) await patchMirrorRow("__fn_cache__", key, {
+          payload: { ...cached.payload, pastoral: cached.payload.pastoral.map((row) => row.id === ev.id ? { ...row, slot_label: label } : row) },
+        });
+      } catch (error) { console.warn("[pastoreio] Falha ao atualizar cópia local", error); }
+      await queryClient.invalidateQueries({ queryKey: ["elder_pastoral_visits"] });
+      toast.success(t("elderProgram.slotSaved"));
+      return true;
+    } catch (error) {
+      console.error("[pastoreio] Falha ao salvar dia/horário", error);
+      toast.error(t("elderProgram.slotSaveFailed"));
+      return false;
+    }
   };
 
   const addRecommendation = async () => {
@@ -257,20 +294,20 @@ function Page() {
             return (
               <Card key={section} className={tab === section ? "" : "hidden"}>
                 <CardContent className="p-4 space-y-4">
-                  {section === "pastoral" && !isSuper && slots.length > 0 && (() => {
-                    const st = slotState(slots, pastoral);
+                  {section === "pastoral" && !isSuper && availableSlots.length > 0 && (() => {
+                    const st = slotState(availableSlots, pastoral);
                     return (
                       <div className="space-y-2">
                         <p className="text-xs text-muted-foreground">Escolha os dias para pastoreio</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {slots.map((s) => {
+                          {availableSlots.map((s) => {
                             const on = st.used.includes(s);
                             const off = !on && (st.full || !canEdit);
                             return (
                               <button key={s} type="button" disabled={off} aria-pressed={on}
                                 onClick={() => {
                                   if (on) { setElderSlot(s); return; }
-                                  const ev = nextEventWithoutSlot(slots, pastoral);
+                                  const ev = nextEventWithoutSlot(availableSlots, pastoral);
                                   if (ev) { saveField(ev, { slot_label: s }); setElderSlot(s); }
                                 }}
                                 className={cn("rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
@@ -345,12 +382,15 @@ function Page() {
                           : new Set<string>();
                         return (
                           <div key={ev.id} id={`pev-${ev.id}`} className={cn("scroll-mt-4",
-                            section === "pastoral" && !isSuper && slots.length > 0 &&
-                              (elderSlot === NO_SLOT ? !!ev.slot_label && slots.includes(ev.slot_label) : ev.slot_label !== elderSlot) && "hidden")}>
+                            section === "pastoral" && !isSuper && availableSlots.length > 0 &&
+                              (elderSlot === NO_SLOT ? !!ev.slot_label && availableSlots.includes(ev.slot_label) : ev.slot_label !== elderSlot) && "hidden")}>
                           <CollapseItem id={`ev:${ev.id}`} summary={section === "local" ? (ev.subject?.trim() || `Assunto ${events.indexOf(ev) + 1}`) : ([ev.slot_label, ev.family_name ?? ev.person_name].filter(Boolean).join(" · ") || SECTION_TITLES[section])}>
                           <EventCard
                             ev={ev}
-                            slots={slots}
+                            slots={availableSlots}
+                            visitStart={visit.start_date}
+                            visitEnd={visit.end_date}
+                            onSaveSlot={(label) => savePastoralSlot(ev, label)}
                             usedSlots={usedSlots}
                             readOnly={!canEdit}
                             canDelete={canEdit && (ev.section === "recommendations" || isSuper)}
@@ -466,6 +506,7 @@ function ElderSlotSwap({ current, free, readOnly, onPick }: {
 
 function EventCard({
   ev, slots, usedSlots, readOnly, canDelete, onChange, onDelete,
+  visitStart, visitEnd, onSaveSlot,
   onScheduleInCronograma, onSaveToPrivateNotes,
   isSuperintendent = true, alreadyScheduled = false, alreadySavedToNotes = false,
 }: {
@@ -476,6 +517,9 @@ function EventCard({
   canDelete: boolean;
   onChange: (patch: Partial<ElderVisitEventDTO>) => void;
   onDelete: () => void;
+  visitStart: string;
+  visitEnd: string;
+  onSaveSlot: (label: string) => Promise<boolean>;
   onScheduleInCronograma?: () => void;
   onSaveToPrivateNotes?: () => void;
   isSuperintendent?: boolean;
@@ -485,8 +529,8 @@ function EventCard({
 
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
   const [hideUsed, setHideUsed] = useState(false);
-  const slotConflict = ev.section === "pastoral" && !!ev.slot_label && usedSlots.has(ev.slot_label);
-  const visibleSlots = hideUsed ? slots.filter((s) => !usedSlots.has(s) || s === ev.slot_label) : slots;
+  const slotConflict = ev.section === "pastoral" && !!ev.slot_label && slotTaken(ev.slot_label, usedSlots);
+  const visibleSlots = hideUsed ? slots.filter((s) => !slotTaken(s, usedSlots) || s === ev.slot_label) : slots;
   return (
     <Card className="border-dashed">
       <CardContent className="p-3 space-y-2">
@@ -508,15 +552,16 @@ function EventCard({
         {ev.section === "pastoral" && (
           <>
             {!isSuperintendent && (
-              <ElderSlotSwap current={ev.slot_label} free={slots.filter((s) => !usedSlots.has(s) && s !== ev.slot_label)} readOnly={readOnly} onPick={(s) => onChange({ slot_label: s })} />
+              <ElderSlotSwap current={ev.slot_label} free={slots.filter((s) => !slotTaken(s, usedSlots) && s !== ev.slot_label)} readOnly={readOnly} onPick={(s) => onChange({ slot_label: s })} />
             )}
             <div className={isSuperintendent ? "" : "hidden"}>
             <FieldRow label="Dia/Horário">
+              <div className="flex min-w-0 items-center gap-1">
               <Select
                 value={ev.slot_label ?? "__none__"}
                 onValueChange={(v) => {
                   const next = v === "__none__" ? null : v;
-                  if (next && next !== ev.slot_label && usedSlots.has(next)) {
+                  if (next && next !== ev.slot_label && slotTaken(next, usedSlots)) {
                     setPendingSlot(next);
                     return;
                   }
@@ -526,7 +571,7 @@ function EventCard({
                 disabled={readOnly}
               >
                 <SelectTrigger
-                  className={cn(slotConflict && "border-destructive text-destructive focus:ring-destructive")}
+                  className={cn("min-w-0 flex-1", slotConflict && "border-destructive text-destructive focus:ring-destructive")}
                 >
                   <SelectValue placeholder={slots.length ? "Selecione um slot" : "Superintendente ainda não definiu slots"} />
                 </SelectTrigger>
@@ -535,6 +580,9 @@ function EventCard({
                   {visibleSlots.map((s, i) => <SelectItem key={i} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {isSuperintendent && <PastoralSlotEditor current={ev.slot_label} start={visitStart} end={visitEnd}
+                used={usedSlots} disabled={readOnly} onSave={onSaveSlot} />}
+              </div>
               {slotConflict && (
                 <p className="mt-1 text-[11px] text-destructive">
                   Este horário já está em uso por outro evento.

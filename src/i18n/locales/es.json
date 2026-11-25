@@ -676,6 +676,14 @@
     }
   },
   "elderProgram": {
+    "editSlot": "Editar día/horario del pastoreo",
+    "slotDay": "Día",
+    "slotTime": "Horario",
+    "noSlot": "Sin día/horario",
+    "slotConflict": "Otro pastoreo ya usa este día y horario. ¿Confirmar de todos modos?",
+    "confirmSlot": "Confirmar y guardar",
+    "slotSaved": "Día y horario del pastoreo guardados",
+    "slotSaveFailed": "No se pudo guardar. Compruebe la conexión e inténtelo de nuevo; su edición sigue abierta.",
     "title": "Pastoreos, Recomendaciones y otros",
     "subtitleSuper": "Defina los eventos de pastoreo, estímulo, recomendaciones y asuntos locales para la visita.",
     "subtitleElder": "Edite los datos de pastoreo, estímulo, recomendaciones y asuntos locales definidos por el superintendente."

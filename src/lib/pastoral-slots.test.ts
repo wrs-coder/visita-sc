@@ -1,8 +1,30 @@
 import { describe, it, expect } from "vitest";
-import { slotState, nextEventWithoutSlot } from "./pastoral-slots";
+import { slotState, nextEventWithoutSlot, visitSlotOptions, customSlotLabel, slotTaken, visitWeekdays } from "./pastoral-slots";
 
 const slots = ["Qua, 10:30", "Sáb, 19:00", "Dom, 10:00"];
 describe("pílulas de pastoreio", () => {
+  it("horário personalizado é atribuído e fica disponível sem mudar o modelo", () => {
+    const events = [{ id: "a", slot_label: "Quinta-feira, 15:00" }];
+    expect(visitSlotOptions(slots, events)).toEqual([...slots, "Quinta-feira, 15:00"]);
+    expect(slots).toEqual(["Qua, 10:30", "Sáb, 19:00", "Dom, 10:00"]);
+    expect(slotState(slots, events).remaining).toBe(0);
+    expect(nextEventWithoutSlot(slots, events)).toBeUndefined();
+  });
+  it("edição livre aceita Quinta 15:00 só dentro da visita", () => {
+    expect(customSlotLabel(4, "15:00", "2026-11-10", "2026-11-16")).toBe("Quinta-feira, 15:00");
+    expect(customSlotLabel(4, "15:00", "2026-11-10", "2026-11-11")).toBeNull();
+  });
+  it("não aceita hora inválida", () => {
+    expect(customSlotLabel(4, "25:00", "2026-11-10", "2026-11-16")).toBeNull();
+    expect(customSlotLabel(4, "15:60", "2026-11-10", "2026-11-16")).toBeNull();
+  });
+  it("conflito reconhece o mesmo dia/hora com nomes diferentes", () => {
+    expect(slotTaken("Quinta-feira, 15:00", new Set(["Qui 15h00"]))).toBe(true);
+    expect(slotTaken("Quinta-feira, 15:30", new Set(["Qui 15h00"]))).toBe(false);
+  });
+  it("dias oferecidos pertencem à semana selecionada", () => {
+    expect(visitWeekdays("2026-11-10", "2026-11-12")).toEqual([2, 3, 4]);
+  });
   it("2 eventos e 3 dias: bloqueia após escolher 2", () => {
     const s = slotState(slots, [{ id: "a", slot_label: "Qua, 10:30" }, { id: "b", slot_label: "Sáb, 19:00" }]);
     expect(s.full).toBe(true);

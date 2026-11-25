@@ -176,6 +176,7 @@ const RAW_TOPICS: HelpTopic[] = [
       { before: "No topo ficam as pílulas “Anciãos”, “Companhia (Ministério)”, “Reuniões”, “Refeições” e “Transporte”. Toque em uma para trocar de parte." },
       { before: "O app volta sempre para a última pílula que você abriu." },
       { before: "Os quadros podem ser recolhidos e expandidos; o que você digitou não se perde." },
+      { before: "Em Pastoreio, o superintendente pode ligar Editar e tocar no lápis ", labelKey: "elderProgram.editSlot", after: " para escolher outro dia da semana e horário, mesmo fora das opções do modelo. Toque em Salvar dados para confirmar ou Cancelar para manter o horário atual. Isso muda somente esse pastoreio nesta visita; modelos e compromissos já enviados ao Cronograma não mudam. Se o horário estiver ocupado, confirme o conflito ou escolha outro." },
       { before: "No menu lateral, ", labelKey: "sidebar.weekSummary", after: " mostra a semana inteira em uma tela." },
     ],
   },
