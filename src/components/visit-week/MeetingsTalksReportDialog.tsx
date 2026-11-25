@@ -194,7 +194,7 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
               lines: [
                 kv("Tema", pioneer.theme),
                 kv("Local", pioneer.location),
-                kv("Reunião com o SC", pioneer.super_meeting_at ? fmtDateTime(pioneer.super_meeting_at) : null),
+                kv("Reunião com o SC", piWeekday == null && pioneer.super_meeting_at ? fmtDateTime(pioneer.super_meeting_at) : null),
                 kv("Oração inicial", pioneer.opening_prayer),
                 kv("Oração final", pioneer.closing_prayer),
               ].filter((x): x is string => !!x),

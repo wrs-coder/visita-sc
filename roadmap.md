@@ -82,7 +82,7 @@
 
 ## Auditoria de horários e pedidos seguintes
 - [x] Mapear edição, salvamento e exibição do dia/horário dos pioneiros; diagnóstico em .lovable/reviews/horarios-pioneiros.md
-- [ ] Padronizar horários de Reuniões e Discursos após revisão do diagnóstico e aprovação do plano
+- [x] Padronizar horários dos pioneiros (cópia antiga sincronizada, relatórios sem horário duplicado, sem meia-noite forçada, aviso de erro ao salvar)
 - [x] Corrigir impressão do relatório da visita (no app abre o PDF)
 - [ ] Aumentar fonte dos campos do Pastoreio dos anciãos; aguarda mockup aprovado
 - [ ] Conferir temas escuros e configuração do telefone; aguarda esclarecimento de qual configuração foi citada

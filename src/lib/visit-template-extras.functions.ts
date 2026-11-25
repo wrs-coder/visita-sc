@@ -184,5 +184,42 @@ export const setVisitTemplateOverride = createServerFn({ method: "POST" })
       .from("visit_template_overrides") as unknown as { upsert: (p: unknown, o: { onConflict: string }) => Promise<{ error: { message: string } | null }> })
       .upsert(payload, { onConflict: "visit_id" });
     if (error) return { ok: false as const, error: error.message };
+
+    // Mantém a cópia antiga (pioneer_meetings.meeting_at/super_meeting_at)
+    // igual ao dia/hora efetivos, para relatórios antigos não ficarem para trás.
+    if ("pioneer_weekday" in cleaned || "pioneer_meeting_time" in cleaned) {
+      try {
+        const { data: v } = await supabaseAdmin
+          .from("visits").select("start_date,end_date,meeting_talk_template_id").eq("id", data.visitId).maybeSingle();
+        const { data: ov } = await (supabaseAdmin.from("visit_template_overrides") as unknown as {
+          select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: { pioneer_weekday: number | null; pioneer_meeting_time: string | null } | null }> } };
+        }).select("pioneer_weekday,pioneer_meeting_time").eq("visit_id", data.visitId).maybeSingle();
+        let tplWd: number | null = null;
+        let tplTm: string | null = null;
+        if (v?.meeting_talk_template_id) {
+          const { data: tp } = await supabaseAdmin.from("meeting_talk_template_pioneer")
+            .select("weekday,meeting_time").eq("template_id", v.meeting_talk_template_id).maybeSingle();
+          tplWd = (tp?.weekday as number | null | undefined) ?? null;
+          tplTm = (tp?.meeting_time as string | null | undefined) ?? null;
+        }
+        const wd = ov?.pioneer_weekday ?? tplWd;
+        const tm = ov?.pioneer_meeting_time ?? tplTm;
+        let at: string | null = null;
+        if (v && wd != null && tm) {
+          const endD = new Date(v.end_date + "T00:00:00");
+          for (let d = new Date(v.start_date + "T00:00:00"); d <= endD; d.setDate(d.getDate() + 1)) {
+            if ((d.getDay() + 6) % 7 === wd) {
+              const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              at = new Date(`${iso}T${tm}`).toISOString();
+              break;
+            }
+          }
+        }
+        await supabaseAdmin.from("pioneer_meetings")
+          .update({ meeting_at: at, super_meeting_at: at }).eq("visit_id", data.visitId);
+      } catch {
+        // A cópia antiga é secundária; o ajuste já foi salvo.
+      }
+    }
     return { ok: true as const };
   });

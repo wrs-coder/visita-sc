@@ -79,6 +79,8 @@ export function resolveWeekdaySlot(
     return new Date(y, m - 1, d).getDay() === jsDay;
   });
   if (!date) return null;
-  const hhmm = normalizeTime(time) ?? "00:00";
+  // Sem hora definida não inventamos meia-noite (00:00).
+  const hhmm = normalizeTime(time);
+  if (!hhmm) return null;
   return { date, at: `${date}T${hhmm}:00` };
 }

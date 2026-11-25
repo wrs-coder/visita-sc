@@ -256,7 +256,7 @@ export function FullVisitReportDialog({
             lines: [
               kv("Tema", s(x.theme)),
               kv("Local", s(x.location)),
-              kv("Reunião com o SC", x.super_meeting_at ? fmtDateTime(x.super_meeting_at) : null),
+              kv("Reunião com o SC", piWeekday == null && x.super_meeting_at ? fmtDateTime(x.super_meeting_at) : null),
               kv("Oração inicial", s(x.opening_prayer)),
               kv("Oração final", s(x.closing_prayer)),
             ].filter((l): l is string => !!l),

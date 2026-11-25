@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useServerFn } from "@tanstack/react-start";
@@ -319,7 +320,17 @@ function ScheduleOverride({
   onSaved?: () => void;
 }) {
   const { t } = useTranslation();
-  const save = useServerFn(setVisitTemplateOverride);
+  const saveRaw = useServerFn(setVisitTemplateOverride);
+  const save = async (args: Parameters<typeof saveRaw>[0]) => {
+    try {
+      const r = await saveRaw(args);
+      if (r && r.ok === false) toast.error(r.error || "Não foi possível salvar o horário.");
+      return r;
+    } catch {
+      toast.error("Não foi possível salvar o horário. Verifique a internet e tente de novo.");
+      return null;
+    }
+  };
   const scheduleText = (() => {
     if (weekday == null && !time) return null;
     const dayLabel = weekday != null ? t(`templates.weekdays.${weekday}`) : "—";

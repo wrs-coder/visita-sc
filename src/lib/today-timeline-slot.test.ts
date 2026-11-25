@@ -17,4 +17,7 @@ describe("resolveWeekdaySlot", () => {
   it("segunda fora dos dias da visita não gera reunião", () => {
     expect(resolveWeekdaySlot(0, "19:30", days)).toBeNull();
   });
+  it("sem hora definida não inventa meia-noite", () => {
+    expect(resolveWeekdaySlot(1, null, days)).toBeNull();
+  });
 });
