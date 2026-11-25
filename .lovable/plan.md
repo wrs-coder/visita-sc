@@ -6,9 +6,13 @@ Tudo fica só em `public/ferramentas/Analisador/` (e testes em `ferramentas-test
 
 **Causa confirmada no código:** ao tocar em "Ano 2027", o período vai até **agosto de 2027**. A regra dos inativos conta os meses sem pregar **de trás para frente a partir do último mês do período**. Como o cartão S-21 do ano atual já tem as linhas de dez/jan/.../ago em branco (meses que ainda não aconteceram), esses meses contam como "não pregou". Resultado: 6+ meses "sem pregar" e a pessoa vira inativa. Com "6 meses" isso não acontece porque o fim é o último mês com relatório.
 
-**Correção:** a regra dos inativos (e o aviso "perigo de ficar inativo") passa a usar como fim o **menor** entre o fim do período escolhido e o **último mês com relatório na congregação**. Meses futuros nunca contam. Não muda nada para períodos já encerrados.
+**Correção (pela data do aparelho):** o último mês avaliado é sempre o **mês anterior ao mês atual do aparelho** (ex.: em novembro/2026, conta até **outubro/2026**), porque os relatórios do mês da visita ainda não foram entregues. O fim efetivo é o menor entre o fim do período escolhido e esse mês.
 
-Teste novo: cartões do ano atual com relatório só até outubro + escolher "Ano 2027" → ninguém que pregou em outubro fica inativo.
+- Vale para **inativos**, **perigo de ficar inativo** e **irregulares**.
+- Pílula **"6 meses"** preenche automaticamente os 6 meses anteriores ao mês atual (em novembro/2026: **maio a outubro/2026**). Continua ajustável em "Outro".
+- Períodos já encerrados não mudam.
+
+Testes novos (com data simulada em 15/11/2026): "Ano 2027" com relatório até outubro → quem pregou em outubro não fica inativo nem irregular; "6 meses" = maio–outubro/2026.
 
 ## (02) O arquivo enviado (hourglass-export-3.json)
 
@@ -43,14 +47,12 @@ Observação honesta: o formato foi conferido com este arquivo do Circuit Manage
 
 ## (03) Alerta das 600 h no ano completo
 
-Em "Meta anual · 600 h", quando o ano de serviço tiver os **12 meses (set–ago) com relatório** na congregação, e o pioneiro regular serviu como regular **o ano todo** (desde setembro) e somou **menos de 600 h**, aparece um alerta extra no cartão dele:
+Em "Meta anual · 600 h", quando o ano de serviço tiver os **12 meses (set–ago) com relatório** na congregação, e o pioneiro regular serviu como regular **o ano todo** (desde setembro) e somou **menos de 600 h**, aparece um alerta extra no cartão dele com a frase **"(Ano anterior faltou: 60 h)"**:
 
 ```text
 ┌───────────────────────────────┐
 │ Maria Souza          540 h    │
-│ ⚠ Serviu o ano todo e não     │
-│   completou as 600 h          │
-│   (faltaram 60 h)             │
+│ ⚠ (Ano anterior faltou: 60 h) │
 │ Média 45 h/mês                │
 └───────────────────────────────┘
 ```
@@ -61,7 +63,7 @@ Testes novos: ano completo com 540 h → alerta; 600 h → sem alerta; começou 
 
 ## Detalhes técnicos
 
-- `analyzer.js` `inactiveMap`: `last = min(upTo, último reportedMonths)`.
+- Nova função `lastClosedMonth(hoje)` = mês anterior ao do aparelho; `inactiveMap`, irregulares e `lastMonths` usam `min(fimDoPeríodo, lastClosedMonth)`; testes injetam a data.
 - `analyzer.js` `pioneerYear`: novos campos `fullYear` (todos os 12 meses do ano em reportedMonths), `wholeYear` (`start === from`), `shortYear = fullYear && wholeYear && done < 600`, `missing = 600 - done`.
 - Exportação: reutilizar `S21.toCircuit` (já carregado/disponível) com parâmetro opcional `groups` para preencher `group_id` e `fsGroups`; sem parâmetro, o Conversor S-21 gera exatamente o mesmo de hoje.
 - Atualizar Ajuda da ferramenta e `instructions-ferramentas.md` conforme a regra; rodar todos os testes de `ferramentas-testes/` incluindo `isolamento.test.ts`.
