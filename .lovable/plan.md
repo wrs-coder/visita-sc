@@ -22,3 +22,15 @@
 ## Ordem
 1 → 2 → mockup do 3 (aguarda aprovação) → 4 (após sua resposta).
 Nada do que já funciona será alterado, sem sugestões extras.
+
+## 5. Relato do SP-172 (Nova Jacareí): horários que voltam e dias errados
+**O que já vi nos dados:**
+- A visita da Nova Jacareí está cadastrada de **segunda 23/11 a sábado 28/11**. Por isso aparece segunda e **não aparece domingo**: o domingo 29 ficou fora das datas da visita.
+- Hoje às 16:39 **todos** os horários de Estudos e revisitas, Campo e Refeições foram regravados no mesmo segundo. Isso indica que algo regrava tudo de uma vez (provavelmente ao reaplicar o modelo ou ao salvar a tela inteira), desfazendo o horário mudado na sexta.
+- Há linhas repetidas em Estudos e revisitas (mesmo dia e horário duas vezes).
+
+**O que vou fazer:**
+1. Confirmar qual ação regrava tudo e fazer com que ela **não troque** um horário que o SC já mudou nesta visita (vale para Estudos e revisitas e Refeições).
+2. Dias mostrados aos anciãos: seguir sempre as datas da visita; vou avisar o SC na tela quando a visita não incluir o domingo, sem mudar as datas sozinho.
+3. Evitar as linhas repetidas, sem apagar nada que já foi preenchido.
+**Muda a tela?** Só o aviso do item 2; mando o desenho antes.
