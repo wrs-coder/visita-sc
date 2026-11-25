@@ -21,7 +21,7 @@ const checklistFileSchema = z.object({
 });
 
 const fieldModalityEnum = z.enum([
-  "casa_em_casa", "estudos_revisitas", "telefone", "cartas", "telefone_cartas", "grupo_de_campo",
+  "casa_em_casa", "estudos_revisitas", "telefone", "cartas", "telefone_cartas", "grupo_de_campo", "outro",
 ]);
 
 const fieldFileSchema = z.object({
@@ -34,6 +34,7 @@ const fieldFileSchema = z.object({
       day_offset: z.number().int().min(0).max(30),
       period: z.string().trim().min(1).max(20),
       modality: fieldModalityEnum.default("casa_em_casa"),
+      modality_other: z.string().trim().max(80).nullable().optional(),
       meeting_time: z.string().trim().max(8).nullable().optional(),
       territory_number: z.string().trim().max(60).nullable().optional(),
       territory_location: z.string().trim().max(200).nullable().optional(),
@@ -145,7 +146,7 @@ export const exportFieldMeetingTemplate = createServerFn({ method: "POST" })
     if (!tpl || tpl.superintendent_id !== userId) return { ok: false as const, error: "Não autorizado." };
     const { data: items } = await supabaseAdmin
       .from("field_meeting_template_items")
-      .select("day_offset,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer,sort_order")
+      .select("day_offset,period,modality,modality_other,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer,sort_order")
       .eq("template_id", data.id).order("sort_order");
     return {
       ok: true as const,
@@ -244,6 +245,7 @@ export const importFieldMeetingTemplate = createServerFn({ method: "POST" })
         day_offset: it.day_offset,
         period: it.period,
         modality: it.modality,
+        modality_other: it.modality === "outro" ? (it.modality_other || null) : null,
         meeting_time: it.meeting_time || null,
         territory_number: it.territory_number || null,
         territory_location: it.territory_location || null,

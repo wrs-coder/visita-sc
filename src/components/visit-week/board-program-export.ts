@@ -26,7 +26,7 @@ async function exportBoardProgramNow(visitId: string, userId: string, opts: Boar
     supabase.from("weekend_meetings").select("meeting_at,public_talk_theme,talk_theme_title,chairman").eq("visit_id", visitId).maybeSingle(),
     supabase.from("pioneer_meetings").select("meeting_at,super_meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visitId).maybeSingle(),
     supabase.from("elders_servants_meetings").select("meeting_at,location,theme,opening_prayer,closing_prayer").eq("visit_id", visitId).maybeSingle(),
-    supabase.from("field_meetings").select("event_date,period,meeting_time,meeting_location,closing_prayer,modality,territory_number").eq("visit_id", visitId).eq("is_active", true),
+    supabase.from("field_meetings").select("event_date,period,meeting_time,meeting_location,closing_prayer,modality,modality_other,territory_number").eq("visit_id", visitId).eq("is_active", true),
     getVisitTemplateExtras({ data: { visitId } }).catch(() => null),
   ]);
   const extras = ex && (ex as { ok?: boolean }).ok ? (ex as { extras: { midweek: R | null; weekend: R | null; pioneer: R | null; elders: R | null } }).extras : null;
@@ -54,7 +54,7 @@ async function exportBoardProgramNow(visitId: string, userId: string, opts: Boar
     },
     pioneer: pi.data || piSlot ? { at: piSlot ?? str((pi.data as R).super_meeting_at) ?? str((pi.data as R).meeting_at), place: str((pi.data as R | null)?.location), theme: str((pi.data as R | null)?.theme), opening: str((pi.data as R | null)?.opening_prayer), closing: str((pi.data as R | null)?.closing_prayer) } : null,
     elders: el.data || elSlot ? { at: elSlot ?? str((el.data as R | null)?.meeting_at), place: str((el.data as R | null)?.location), theme: str((el.data as R | null)?.theme), opening: str((el.data as R | null)?.opening_prayer), closing: str((el.data as R | null)?.closing_prayer) } : null,
-    field: ((fm.data ?? []) as R[]).map((f) => ({ date: String(f.event_date ?? ""), period: String(f.period ?? ""), time: str(f.meeting_time), place: str(f.meeting_location), prayer: str(f.closing_prayer), modality: str(f.modality), territory: str(f.territory_number) })),
+    field: ((fm.data ?? []) as R[]).map((f) => ({ date: String(f.event_date ?? ""), period: String(f.period ?? ""), time: str(f.meeting_time), place: str(f.meeting_location), prayer: str(f.closing_prayer), modality: str(f.modality) === "outro" ? (str(f.modality_other) ?? "Outro") : str(f.modality), territory: str(f.territory_number) })),
   }, opts);
   const blob = await renderBoardPdf(model, opts);
   const kind = opts.template === "simple" ? "simplificado" : "completo";

@@ -1,4 +1,5 @@
 import { readCacheMiddleware } from "@/lib/local-first-fn";
+import { fieldModalityText } from "@/lib/enum-labels";
 // Server fn que retorna o snapshot do "Resumo da Semana" para o
 // Superintendente autenticado, usando o MESMO shape do guest snapshot
 // (apenas leitura — RLS já permite o super ler tudo da própria
@@ -127,13 +128,13 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       supabase.from("meal_day_notes").select("meal_date,notes").eq("visit_id", visit.id),
       supabase
         .from("field_assignments")
-        .select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone")
+        .select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone,ministry_modality")
         .eq("visit_id", visit.id)
         .eq("is_active", true)
         .order("event_date"),
       supabase
         .from("field_meetings")
-        .select("id,event_date,period,modality,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer")
+        .select("id,event_date,period,modality,modality_other,meeting_time,territory_number,territory_location,auxiliary_leaders,closing_prayer")
         .eq("visit_id", visit.id)
         .eq("is_active", true)
         .order("event_date")
@@ -272,7 +273,7 @@ export const getSuperVisitSummary = createServerFn({ method: "POST" })
       meals: meals ?? [],
       mealDayNotes: mealDayNotes ?? [],
       field: field ?? [],
-      fieldMeetings: fieldMeetings ?? [],
+      fieldMeetings: (fieldMeetings ?? []).map((f) => ({ ...f, modality: fieldModalityText(f.modality, f.modality_other) })),
       transport: transport ?? [],
       checklist: checklist ?? [],
       midweek: midweek ?? [],

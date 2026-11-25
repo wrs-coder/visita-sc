@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { fieldModalityText } from "@/lib/enum-labels";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,7 +100,7 @@ function ReportPage() {
     section(t("report.sections.meals"), meals.map((m) => `${fmtDate(String(m.meal_date))} · ${fmtTime(String(m.meal_time ?? ""))} — ${String(m.type ?? "")} ${_in} ${String(m.host_name ?? dash)}${m.location ? ` (${String(m.location)})` : ""}`));
     section(t("report.sections.transport"), transports.map((tr) => `${fmtDate(String(tr.event_date ?? ""))} — ${String(tr.driver_name ?? "")}${tr.contact_phone ? ` · ${String(tr.contact_phone)}` : ""}${tr.description ? ` · ${String(tr.description)}` : ""}`));
     section(t("report.sections.fieldAssignments"), assignments.map((a) => `${fmtDate(String(a.event_date))} · ${String(a.period ?? "")} — ${String(a.acompanhante ?? "")}${a.meeting_point ? ` ${_in} ${String(a.meeting_point)}` : ""}`));
-    section(t("report.sections.fieldMeetings"), fieldMeetings.map((f) => `${fmtDate(String(f.event_date))} · ${String(f.period ?? "")} — ${String(f.modality ?? "")}${f.meeting_location ? ` ${_in} ${String(f.meeting_location)}` : ""}`));
+    section(t("report.sections.fieldMeetings"), fieldMeetings.map((f) => `${fmtDate(String(f.event_date))} · ${String(f.period ?? "")} — ${fieldModalityText(String(f.modality ?? ""), f.modality_other as string | null)}${f.meeting_location ? ` ${_in} ${String(f.meeting_location)}` : ""}`));
     section(t("report.sections.midweek"), midweek.map((x) => `${t("report.labels.chairman")}: ${String(x.chairman ?? dash)} · ${t("report.labels.serviceTalk")}: ${String(x.service_talk_theme ?? dash)}`));
     section(t("report.sections.weekend"), weekend.map((x) => `${t("report.labels.publicTalk")}: ${String(x.public_talk_theme ?? dash)} · ${t("report.labels.finalTalk")}: ${String(x.talk_theme_title ?? dash)}`));
     section(t("report.sections.pioneer"), pioneer.map((x) => `${fmtDate(String(x.meeting_at ?? ""))} — ${String(x.theme ?? dash)}${x.location ? ` (${String(x.location)})` : ""}`));
@@ -188,7 +189,7 @@ function ReportPage() {
 
         <ReportSection title={t("report.sections.fieldMeetings")} empty={fieldMeetings.length === 0}>
           {fieldMeetings.map((f, i) => (
-            <li key={i}>{fmtDate(String(f.event_date))} · {String(f.period ?? "")} — {String(f.modality ?? "")}{f.meeting_location ? <em> · {String(f.meeting_location)}</em> : null}{f.territory_number ? <> · {t("report.labels.territory")} {String(f.territory_number)}</> : null}</li>
+            <li key={i}>{fmtDate(String(f.event_date))} · {String(f.period ?? "")} — {fieldModalityText(String(f.modality ?? ""), f.modality_other as string | null)}{f.meeting_location ? <em> · {String(f.meeting_location)}</em> : null}{f.territory_number ? <> · {t("report.labels.territory")} {String(f.territory_number)}</> : null}</li>
           ))}
         </ReportSection>
 

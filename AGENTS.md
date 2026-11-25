@@ -44,3 +44,4 @@
 - Offline PIN vault never expires; only Sign out or 10 wrong PINs destroy it (long offline periods).
 - Outline edit mode hides chrome; details in a dialog.
 - Site tools: public/ferramentas + ferramentas-testes (guarded); never edit src/ or version with them.
+- Companhia (Ministério) modality is one text column field_assignments.ministry_modality (fixed key or "outro:<text>", NULL = Estudos e Revisitas) and field modality "outro" keeps its text in modality_other, with typed texts remembered per device (ministry-modality.ts), because old rows must read unchanged.

@@ -204,7 +204,7 @@
     "schedule": "Cronograma",
     "itinerary": "Itinerario",
     "congregations": "Congregaciones",
-    "fieldStudies": "Estudios y Revisitas",
+    "fieldStudies": "Compañía (Ministerio)",
     "meetingsTalks": "Reuniones y Discursos",
     "meals": "Comidas",
     "transport": "Transporte",
@@ -265,7 +265,7 @@
     "mealsToday": "Comidas de hoy",
     "noActivityToday": "Ninguna actividad programada para hoy.",
     "transportToday": "Transporte del día",
-    "studiesVisits": "Estudios y Revisitas",
+    "studiesVisits": "Compañía (Ministerio)",
     "fieldMeeting": "Reunión de Campo",
     "arrangements": "Arreglos:",
     "closingPrayer": "Oración final:",
@@ -435,7 +435,7 @@
     "todayBlockSubtitle": "Eventos programados para el día de hoy."
   },
   "fieldStudies": {
-    "title": "Estudios y Revisitas",
+    "title": "Compañía (Ministerio)",
     "subtitleSuper": "Define los turnos y edita acompañante, lugar y teléfono. Los elementos desactivados se ocultan a la congregación.",
     "subtitleElder": "Edita acompañante, lugar de encuentro y teléfono de contacto.",
     "morning": "Mañana",
@@ -738,7 +738,7 @@
       "subtitle": "Organice su disponibilidad para Estudios y Revisitas, Comidas y solicitud de transporte.",
       "templateLabel": "Plantilla",
       "templateName": "Nombre de la plantilla",
-      "studiesTitle": "Estudios y Revisitas",
+      "studiesTitle": "Compañía (Ministerio)",
       "mealsTitle": "Comidas",
       "transportTitle": "Transporte",
       "saveTemplate": "Guardar Plantilla",
@@ -914,7 +914,8 @@
       "telefone": "Teléfono",
       "cartas": "Cartas",
       "telefone_cartas": "Teléfono + Cartas",
-      "grupo_de_campo": "Grupo de campo"
+      "grupo_de_campo": "Grupo de campo",
+      "outro": "Otro"
     },
     "dayPills": {
       "title": "Días de la visita",

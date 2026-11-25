@@ -1,4 +1,6 @@
 import { appPrompt, appConfirm } from "@/components/ui/app-dialogs";
+import { ModalityOtherPicker } from "@/components/ModalityOtherPicker";
+import { MINISTRY_MODALITIES, splitMinistryModality, ministryModalityLabel } from "@/lib/ministry-modality";
 import { createFileRoute } from "@tanstack/react-router";
 import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
@@ -197,7 +199,7 @@ function Page() {
     const id = await ensureTemplate(slot);
     if (!id) return;
     const defaults: Payload =
-      kind === "study" ? { period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", acompanhante_for: "", contact_phone: "" }
+      kind === "study" ? { ministry_modality: "estudos_revisitas", period: "Manhã", meeting_point: "", meeting_time: "", acompanhante: "", acompanhante_for: "", contact_phone: "" }
       : kind === "meal" ? { type: "lunch", host_name: "", location: "", meal_time: "", notes: "" }
       : {
           all_day: false,
@@ -324,12 +326,12 @@ function Page() {
 
                 {section === "study" && (<>
                 <InfoDisclosure label="Informações adicionais do superintendente" filled={!!(studyGenObsBySlot[slot] ?? "").trim()}>
-                  <p className="text-xs text-muted-foreground">Observações exibidas aos anciãos junto da programação de Estudos e Revisitas.</p>
+                  <p className="text-xs text-muted-foreground">Observações exibidas aos anciãos junto da programação de Companhia (Ministério).</p>
                   <div>
                     <Label className="text-xs">Informações adicionais do superintendente (gerais)</Label>
                     <Textarea
                       className="mt-1 text-red-600 dark:text-red-400"
-                      placeholder="Observações gerais sobre Estudos e Revisitas"
+                      placeholder="Observações gerais sobre Companhia (Ministério)"
                       value={studyGenObsBySlot[slot] ?? ""}
                       maxLength={4000}
                       onChange={(e) => setStudyGenObsBySlot({ ...studyGenObsBySlot, [slot]: e.target.value })}
@@ -339,7 +341,7 @@ function Page() {
                         if (!r.ok) toast.error(r.error);
                       }}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Estudos e Revisitas dos anciãos.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Aparecem em vermelho no topo da aba Companhia (Ministério) dos anciãos.</p>
                   </div>
                 </InfoDisclosure>
 
@@ -415,7 +417,7 @@ function Page() {
 function summarize(kind: Kind, p: Payload, t: (k: string) => string): string {
   const v = (k: string) => (p[k] == null || p[k] === "" ? null : String(p[k]));
   const time = (k: string) => v(k)?.slice(0, 5) ?? null;
-  if (kind === "study") return [v("period"), time("meeting_time"), v("acompanhante")].filter(Boolean).join(" · ");
+  if (kind === "study") return [ministryModalityLabel(v("ministry_modality")), v("period"), time("meeting_time"), v("acompanhante")].filter(Boolean).join(" · ");
   if (kind === "meal") return [v("type") ? t(`templates.program.meal.${v("type")}`) : null, time("meal_time"), v("host_name")].filter(Boolean).join(" · ");
   return [v("driver_name"), time("departure_time")].filter(Boolean).join(" · ");
 }
@@ -486,6 +488,14 @@ function PayloadEditor({ kind, payload, onChange }: { kind: Kind; payload: Paylo
   const set = (k: string, v: PayloadValue) => onChange({ ...payload, [k]: v });
   if (kind === "study") return (
     <div className="grid grid-cols-2 gap-2">
+      <ModalityOtherPicker
+        className="col-span-2"
+        scope="ministry"
+        options={MINISTRY_MODALITIES}
+        value={splitMinistryModality(payload.ministry_modality as string | null).key}
+        other={splitMinistryModality(payload.ministry_modality as string | null).other}
+        onChange={(k, o) => set("ministry_modality", k === "outro" ? `outro:${o}` : k)}
+      />
       <Select value={String(payload.period ?? "Manhã")} onValueChange={(v) => set("period", v)}>
         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
         <SelectContent><SelectItem value="Manhã">{t("templates.program.study.morning")}</SelectItem><SelectItem value="Tarde">{t("templates.program.study.afternoon")}</SelectItem></SelectContent>

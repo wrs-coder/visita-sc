@@ -177,6 +177,7 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
           meeting_point: str(p.meeting_point), meeting_time: time(p.meeting_time),
           acompanhante: str(p.acompanhante), acompanhante_for: str(p.acompanhante_for),
           contact_phone: str(p.contact_phone), is_active: bool(p.is_active, true),
+          ministry_modality: str(p.ministry_modality) && str(p.ministry_modality) !== "outro:" ? str(p.ministry_modality) : null,
         });
         if (insErr) return { ok: false as const, error: insErr.message };
         fieldSigs.add(sig); inserted++;

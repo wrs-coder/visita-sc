@@ -1,4 +1,5 @@
 import { DayPillsStrip } from "@/components/visit-summary/DayPillsStrip";
+import { ministryModalityLabel } from "@/lib/ministry-modality";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { EventReminderSync, ReminderSettingsCard } from "@/components/reminders/EventReminders";
 import type { TimelineSource } from "@/lib/today-timeline";
@@ -57,7 +58,7 @@ interface Snapshot {
   schedule: Array<{ id: string; event_date: string; start_time: string | null; end_time: string | null; title: string; location: string | null; type: string; notes: string | null }>;
   meals: Array<{ id: string; meal_date: string; type: string; host_name: string | null; location: string | null; meal_time: string | null; contact_phone: string | null; notes: string | null }>;
   mealDayNotes: Array<{ meal_date: string; notes: string }>;
-  field: Array<{ id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null; notes?: string | null }>;
+  field: Array<{ id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null; notes?: string | null; ministry_modality?: string | null }>;
   fieldMeetings: Array<{ id: string; event_date: string; period: string; modality: string; meeting_time: string | null; meeting_location?: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null; observations: string | null }>;
   transport: Array<{
     id: string;
@@ -518,6 +519,7 @@ function Page() {
                     {snap.field.map((f) => (
                       <FoldCard key={f.id} id={`${tabFold}:st:${f.id}`} title={<span className="font-medium">{fmtDate(f.event_date)} • {f.period}{f.meeting_time ? ` • ${fmtTime(f.meeting_time)}` : ""}</span>}>
                         <InfoList rows={[
+                          ["Modalidade", ministryModalityLabel(f.ministry_modality)],
                           [t("guest.labels.meetingPoint"), f.meeting_point],
                           [t("guest.labels.companion"), f.acompanhante],
                           [t("guest.labels.companionFor"), f.acompanhante_for],
@@ -1130,7 +1132,7 @@ function SharePreview({ snap, selected, fmtDate, mealLabel }: { snap: Snapshot; 
         <Section title={t("guest.sections.estudos")} empty={snap.field.length === 0}>
           {snap.field.map((f) => (
             <div key={f.id} className="py-1 border-b border-gray-100 last:border-0">
-              <div className="font-medium">{fmtDate(f.event_date)} • {f.period} • {fmtTime(f.meeting_time)}</div>
+              <div className="font-medium">{fmtDate(f.event_date)} • {f.period} • {fmtTime(f.meeting_time)} • {ministryModalityLabel(f.ministry_modality)}</div>
               {f.meeting_point && <div className="text-xs text-gray-600">📍 {f.meeting_point}</div>}
               {f.acompanhante && <div className="text-xs">{t("guest.labels.companionShort")}: {f.acompanhante}{f.acompanhante_for ? ` (${t("guest.labels.withCompanion")} ${f.acompanhante_for})` : ""}</div>}
               {f.contact_phone && <div className="text-xs">📞 {f.contact_phone}</div>}

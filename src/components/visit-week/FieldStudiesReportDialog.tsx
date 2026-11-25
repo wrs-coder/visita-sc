@@ -1,4 +1,5 @@
 // Diálogo "Relatório executivo" da aba Estudos de Campo (escala).
+import { ministryModalityLabel } from "@/lib/ministry-modality";
 // Uma seção por dia, blocos por turno (Manhã / Tarde).
 
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ interface Row {
   meeting_time: string | null;
   acompanhante: string | null;
   acompanhante_for: string | null;
+  ministry_modality?: string | null;
   contact_phone: string | null;
   is_active: boolean;
 }
@@ -57,7 +59,7 @@ export function FieldStudiesReportDialog({ open, onOpenChange, visitId, visitTit
       setLoading(true);
       const { data } = await supabase
         .from("field_assignments")
-        .select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone,is_active")
+        .select("id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone,is_active,ministry_modality")
         .eq("visit_id", visitId)
         .eq("is_active", true)
         .order("event_date")
@@ -78,6 +80,7 @@ export function FieldStudiesReportDialog({ open, onOpenChange, visitId, visitTit
         blocks: list.map((r) => ({
           heading: `${r.period}${r.meeting_time ? ` · ${r.meeting_time.slice(0, 5)}` : ""}`,
           lines: [
+            kv("Modalidade", ministryModalityLabel(r.ministry_modality)),
             kv("Ponto de encontro", r.meeting_point),
             kv("Acompanhante", r.acompanhante),
             kv("Acompanhante de", r.acompanhante_for ? (COMPANION_FOR_LABEL[r.acompanhante_for] ?? r.acompanhante_for) : null),

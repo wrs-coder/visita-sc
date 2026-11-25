@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import { ModalityOtherPicker } from "@/components/ModalityOtherPicker";
+import { MINISTRY_MODALITIES, splitMinistryModality, joinMinistryModality, ministryModalityLabel } from "@/lib/ministry-modality";
 import { EldersSubtitle, countFilled, emptyRing } from "@/components/templates/TemplateChrome";
 import { VisitDayPills, useVisitDay } from "@/components/visit-week/VisitDayPills";
 import { VisitProgramTabs } from "@/components/visit-week/VisitProgramTabs";
@@ -35,6 +37,7 @@ interface Row {
   meeting_time: string | null;
   acompanhante: string | null;
   acompanhante_for: string | null;
+  ministry_modality?: string | null;
   contact_phone: string | null;
   is_active: boolean;
 }
@@ -58,7 +61,7 @@ function Page() {
         table: "field_assignments",
         remote: () => supabase
           .from("field_assignments")
-          .select("id,visit_id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone,is_active")
+          .select("id,visit_id,event_date,period,meeting_point,meeting_time,acompanhante,acompanhante_for,contact_phone,is_active,ministry_modality")
           .eq("visit_id", visit.id)
           .order("event_date")
           .order("period") as never,
@@ -190,6 +193,10 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
   const [acompanhante, setAcompanhante] = useState(r.acompanhante ?? "");
   const [acompanhante_for, setAcompanhanteFor] = useState(r.acompanhante_for ?? "");
   const [contact_phone, setContactPhone] = useState(r.contact_phone ?? "");
+  const [modKey, setModKey] = useState(splitMinistryModality(r.ministry_modality).key);
+  const [modOther, setModOther] = useState(splitMinistryModality(r.ministry_modality).other);
+  const modValue = joinMinistryModality(modKey, modOther);
+  const modOrig = joinMinistryModality(splitMinistryModality(r.ministry_modality).key, splitMinistryModality(r.ministry_modality).other);
 
   useEffect(() => {
     setMeetingPoint(r.meeting_point ?? "");
@@ -197,14 +204,17 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
     setAcompanhante(r.acompanhante ?? "");
     setAcompanhanteFor(r.acompanhante_for ?? "");
     setContactPhone(r.contact_phone ?? "");
-  }, [r.id, r.meeting_point, r.meeting_time, r.acompanhante, r.acompanhante_for, r.contact_phone]);
+    setModKey(splitMinistryModality(r.ministry_modality).key);
+    setModOther(splitMinistryModality(r.ministry_modality).other);
+  }, [r.id, r.meeting_point, r.meeting_time, r.acompanhante, r.acompanhante_for, r.contact_phone, r.ministry_modality]);
 
   const dirty =
     meeting_point !== (r.meeting_point ?? "") ||
     meeting_time !== (r.meeting_time ?? "") ||
     acompanhante !== (r.acompanhante ?? "") ||
     acompanhante_for !== (r.acompanhante_for ?? "") ||
-    contact_phone !== (r.contact_phone ?? "");
+    contact_phone !== (r.contact_phone ?? "") ||
+    modValue !== modOrig;
 
   const everSaved = !!(r.meeting_point || r.acompanhante || r.contact_phone);
 
@@ -216,6 +226,7 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
       acompanhante: acompanhante || null,
       acompanhante_for: acompanhante_for || null,
       contact_phone: contact_phone || null,
+      ministry_modality: modValue,
     });
   };
 
@@ -237,6 +248,14 @@ function RowCard({ row: r, isSuper, saving, update, remove }: { row: Row; isSupe
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Modalidade</label>
+            {isSuper ? (
+              <ModalityOtherPicker className="mt-0.5" scope="ministry" options={MINISTRY_MODALITIES} value={modKey} other={modOther} onChange={(k, o) => { setModKey(k); setModOther(o); }} />
+            ) : (
+              <Input readOnly value={ministryModalityLabel(modValue)} className="h-9 mt-0.5" />
+            )}
+          </div>
           <div className="col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("fieldStudies.time")}</label>
             <Input type="time" value={meeting_time} readOnly={!isSuper} disabled={!isSuper} onChange={(e) => setMeetingTime(e.target.value)} className="h-9 mt-0.5" />

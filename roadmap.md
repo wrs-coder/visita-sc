@@ -71,3 +71,11 @@
 - [x] Importar pastas dos grupos (nome da pasta = grupo)
 - [x] Tocar no nome da lista abre o cartão mês a mês
 - [x] Analisador (24/11): pílulas em ordem + "Encerrar análise", sem cartão <50 h no resumo, totais mensais, meta anual 600 h dos pioneiros, importar .json (Circuit Manager) e .xml (TSWin)
+
+## Melhorias Visita SC (25/11)
+- [x] (01) Balão bíblico: palavras juntas em Provérbios
+- [x] (02) Companhia (Ministério) com modalidade + Outro
+- [x] (03) Campo: modalidade Outro
+- [ ] (04) Programa da visita: já editável por visita; aguardando o usuário dizer o que falta
+- [x] Sugestão: lembrar textos de "Outro"
+- [x] Sugestão: selo "editado nesta visita" (já existia nas informações do modelo)

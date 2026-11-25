@@ -204,7 +204,7 @@
     "schedule": "Cronograma",
     "itinerary": "Itinerário",
     "congregations": "Congregações",
-    "fieldStudies": "Estudos e Revisitas",
+    "fieldStudies": "Companhia (Ministério)",
     "meetingsTalks": "Reuniões e Discursos",
     "meals": "Refeições",
     "transport": "Transporte",
@@ -265,7 +265,7 @@
     "mealsToday": "Refeições de hoje",
     "noActivityToday": "Nenhuma atividade programada para hoje.",
     "transportToday": "Transporte do dia",
-    "studiesVisits": "Estudos e Revisitas",
+    "studiesVisits": "Companhia (Ministério)",
     "fieldMeeting": "Reunião de Campo",
     "arrangements": "Arranjos:",
     "closingPrayer": "Oração final:",
@@ -458,7 +458,7 @@
     "bodyRequired": "Escreva a mensagem."
   },
   "fieldStudies": {
-    "title": "Estudos e Revisitas",
+    "title": "Companhia (Ministério)",
     "subtitleSuper": "Defina os turnos e edite acompanhante, local e telefone. Itens desativados ficam ocultos para a congregação.",
     "subtitleElder": "Edite acompanhante, local de encontro e telefone de contato.",
     "morning": "Manhã",
@@ -748,10 +748,10 @@
     },
     "program": {
       "title": "Programação pessoal",
-      "subtitle": "Organize a sua disponibilidade para Estudos e Revisitas, Refeições e solicitação de transporte.",
+      "subtitle": "Organize a sua disponibilidade para Companhia (Ministério), Refeições e solicitação de transporte.",
       "templateLabel": "Modelo",
       "templateName": "Nome do modelo",
-      "studiesTitle": "Estudos e Revisitas",
+      "studiesTitle": "Companhia (Ministério)",
       "mealsTitle": "Refeições",
       "transportTitle": "Transporte",
       "saveTemplate": "Salvar Modelo",
@@ -927,7 +927,8 @@
       "telefone": "Telefone",
       "cartas": "Cartas",
       "telefone_cartas": "Telefone + Cartas",
-      "grupo_de_campo": "Grupo de campo"
+      "grupo_de_campo": "Grupo de campo",
+      "outro": "Outro"
     },
     "dayPills": {
       "title": "Dias da visita",

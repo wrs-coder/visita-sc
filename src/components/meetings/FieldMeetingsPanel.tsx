@@ -1,4 +1,6 @@
 import { VisitDayPills, useVisitDay } from "@/components/visit-week/VisitDayPills";
+import { ModalityOtherPicker } from "@/components/ModalityOtherPicker";
+import { useState as useStateFM, useEffect as useEffectFM } from "react";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
@@ -36,6 +38,7 @@ interface Row {
   event_date: string;
   period: string;
   modality: Modality;
+  modality_other?: string | null;
   meeting_time: string | null;
   meeting_location: string | null;
   territory_number: string | null;
@@ -67,7 +70,7 @@ export function FieldMeetingsPanel() {
         table: "field_meetings",
         remote: () => supabase
           .from("field_meetings")
-          .select("id,visit_id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active,requested_fields")
+          .select("id,visit_id,event_date,period,modality,modality_other,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active,requested_fields")
           .eq("visit_id", visit.id)
           .order("event_date")
           .order("period") as never,
@@ -121,7 +124,7 @@ export function FieldMeetingsPanel() {
   ];
   const missing = isSuper ? 0 : missingFieldCount(rows.filter((r) => r.is_active));
   const copyTargets = (r: Row) => rows.filter((x) => x.id !== r.id && x.is_active);
-  const dayLabel = (r: Row) => [format(parseISO(r.event_date), "EEE d", { locale: dateLocale }), r.period, r.meeting_time?.slice(0, 5), FIELD_MODALITY_LABELS[r.modality as Modality]].filter(Boolean).join(" · ");
+  const dayLabel = (r: Row) => [format(parseISO(r.event_date), "EEE d", { locale: dateLocale }), r.period, r.meeting_time?.slice(0, 5), r.modality === "outro" && r.modality_other ? r.modality_other : FIELD_MODALITY_LABELS[r.modality as Modality]].filter(Boolean).join(" · ");
   const rowSummary = (r: Row) =>
     [r.period, r.meeting_time?.slice(0, 5), r.meeting_location].filter(Boolean).join(" · ");
 
@@ -265,7 +268,7 @@ function RowCard({ row: r, isSuper, realSuper, saving, update, remove, targets, 
               {r.period}
               {!r.is_active && ` · ${t("meetingsTalks.field.deactivated")}`}
             </div>
-            <div className="text-xs text-muted-foreground truncate">{FIELD_MODALITY_LABELS[r.modality]}</div>
+            <div className="text-xs text-muted-foreground truncate">{r.modality === "outro" && r.modality_other ? r.modality_other : FIELD_MODALITY_LABELS[r.modality]}</div>
           </div>
           <div className="flex items-center gap-2">
             {isSuper && <Switch checked={r.is_active} onCheckedChange={(v) => update(r.id, { is_active: v })} aria-label={t("meetingsTalks.field.deactivated")} />}
@@ -305,14 +308,7 @@ function RowCard({ row: r, isSuper, realSuper, saving, update, remove, targets, 
         {isSuper && (
           <div>
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{t("meetingsTalks.field.modality")}</label>
-            <Select value={r.modality} onValueChange={(v) => update(r.id, { modality: v as Modality })}>
-              <SelectTrigger className="h-9 mt-0.5"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {FIELD_MODALITIES.map((m) => (
-                  <SelectItem key={m} value={m}>{FIELD_MODALITY_LABELS[m]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FieldModalityEdit row={r} onSave={(patch) => update(r.id, patch)} />
           </div>
         )}
         <div className="grid grid-cols-2 gap-2">
@@ -436,5 +432,25 @@ function CopyToDays({ label, value, field, targets, dayLabel, update }: {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/** Modalidade da saída de campo desta visita, com "Outro" + texto livre. */
+function FieldModalityEdit({ row, onSave }: { row: Row; onSave: (patch: Partial<Row>) => void }) {
+  const [other, setOther] = useStateFM(row.modality_other ?? "");
+  useEffectFM(() => { setOther(row.modality_other ?? ""); }, [row.id, row.modality_other]);
+  return (
+    <ModalityOtherPicker
+      className="mt-0.5"
+      scope="field"
+      options={FIELD_MODALITIES.map((m) => ({ value: m, label: FIELD_MODALITY_LABELS[m] }))}
+      value={row.modality}
+      other={other}
+      onChange={(k, o) => {
+        if (k !== row.modality) onSave({ modality: k as Modality, modality_other: k === "outro" ? (o.trim() || null) : null });
+        else setOther(o);
+      }}
+      onOtherCommit={(o) => { if ((o.trim() || null) !== (row.modality_other ?? null)) onSave({ modality_other: o.trim() || null }); }}
+    />
   );
 }

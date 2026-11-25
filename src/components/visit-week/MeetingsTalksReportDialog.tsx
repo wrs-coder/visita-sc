@@ -1,4 +1,5 @@
 // Diálogo "Relatório executivo" da aba Reuniões e Discursos.
+import { fieldModalityText } from "@/lib/enum-labels";
 // Inclui as 5 subabas como seções: Campo, Meio de semana, Fim de semana,
 // Pioneiros, Anciãos e Servos Ministeriais — cada uma com seu próprio
 // texto opcional de "Informações adicionais do superintendente" vindo do
@@ -113,7 +114,7 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
         supabase
           .from("field_meetings")
           .select(
-            "id,event_date,period,modality,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active",
+            "id,event_date,period,modality,modality_other,meeting_time,meeting_location,territory_number,territory_location,auxiliary_leaders,closing_prayer,observations,is_active",
           )
           .eq("visit_id", visitId)
           .eq("is_active", true)
@@ -146,7 +147,7 @@ export function MeetingsTalksReportDialog({ open, onOpenChange, visitId, visitTi
       const fieldBlocks = fieldRows.map((r) => ({
         heading: `${fmtDay(r.event_date)} · ${r.period}${r.meeting_time ? ` · ${r.meeting_time.slice(0, 5)}` : ""}`,
         lines: [
-          kv("Modalidade", r.modality),
+          kv("Modalidade", fieldModalityText(r.modality, (r as { modality_other?: string | null }).modality_other)),
           kv("Local", r.meeting_location),
           kv("Território", [r.territory_number, r.territory_location].filter(Boolean).join(" — ")),
           kv("Dirigentes auxiliares", r.auxiliary_leaders),

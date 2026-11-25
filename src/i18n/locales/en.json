@@ -204,7 +204,7 @@
     "schedule": "Schedule",
     "itinerary": "Itinerary",
     "congregations": "Congregations",
-    "fieldStudies": "Studies & Return Visits",
+    "fieldStudies": "Companionship (Ministry)",
     "meetingsTalks": "Meetings & Talks",
     "meals": "Meals",
     "transport": "Transport",
@@ -265,7 +265,7 @@
     "mealsToday": "Today's meals",
     "noActivityToday": "No activity scheduled for today.",
     "transportToday": "Today's transport",
-    "studiesVisits": "Studies & Return Visits",
+    "studiesVisits": "Companionship (Ministry)",
     "fieldMeeting": "Field Meeting",
     "arrangements": "Arrangements:",
     "closingPrayer": "Closing prayer:",
@@ -458,7 +458,7 @@
     "bodyRequired": "Write the message."
   },
   "fieldStudies": {
-    "title": "Studies & Return Visits",
+    "title": "Companionship (Ministry)",
     "subtitleSuper": "Define the shifts and edit companion, location and phone. Disabled items are hidden from the congregation.",
     "subtitleElder": "Edit companion, meeting point and contact phone.",
     "morning": "Morning",
@@ -761,7 +761,7 @@
       "subtitle": "Organize your availability for Studies and Return Visits, Meals and transportation requests.",
       "templateLabel": "Template",
       "templateName": "Template name",
-      "studiesTitle": "Studies & Return Visits",
+      "studiesTitle": "Companionship (Ministry)",
       "mealsTitle": "Meals",
       "transportTitle": "Transport",
       "saveTemplate": "Save Template",
@@ -937,7 +937,8 @@
       "telefone": "Phone",
       "cartas": "Letters",
       "telefone_cartas": "Phone + Letters",
-      "grupo_de_campo": "Field group"
+      "grupo_de_campo": "Field group",
+      "outro": "Other"
     },
     "dayPills": {
       "title": "Visit days",

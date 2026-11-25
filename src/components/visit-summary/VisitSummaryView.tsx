@@ -1,4 +1,5 @@
 // Componente apresentacional compartilhado entre o painel do convidado
+import { ministryModalityLabel } from "@/lib/ministry-modality";
 // (Acesso Corpo de anciãos / ESC) e a nova aba "Resumo da Semana" do
 // superintendente. Aceita o mesmo shape de Snapshot e expõe export
 // PDF/PNG/WhatsApp via `saveBlob` (estabilidade nativa: nada de download
@@ -60,7 +61,7 @@ export interface VisitSnapshot {
   schedule: Array<{ id: string; event_date: string; start_time: string | null; end_time: string | null; title: string; location: string | null; type: string; notes: string | null }>;
   meals: Array<{ id: string; meal_date: string; type: string; host_name: string | null; location: string | null; meal_time: string | null; contact_phone: string | null; notes: string | null }>;
   mealDayNotes: Array<{ meal_date: string; notes: string }>;
-  field: Array<{ id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null }>;
+  field: Array<{ id: string; event_date: string; period: string; meeting_point: string | null; meeting_time: string | null; acompanhante: string | null; acompanhante_for: string | null; contact_phone: string | null; ministry_modality?: string | null }>;
   fieldMeetings: Array<{ id: string; event_date: string; period: string; modality: string; meeting_time: string | null; territory_number: string | null; territory_location: string | null; auxiliary_leaders: string | null; closing_prayer: string | null }>;
   transport: Array<{ id: string; event_date: string | null; driver_name: string; contact_phone: string | null; description: string | null; notes: string | null; weekday?: number | null; event_type?: string | null; direction?: string | null; all_day?: boolean | null; departure_time?: string | null; return_time?: string | null }>;
   checklist: Array<{ id: string; title: string; description: string | null; status: string; link_or_notes: string | null; info_text: string | null }>;
@@ -481,6 +482,7 @@ export function VisitSummaryView({
                         )}
                       </div>
                       <InfoList rows={[
+                        ["Modalidade", ministryModalityLabel(f.ministry_modality)],
                         [t("guest.labels.meetingPoint"), f.meeting_point],
                         [t("guest.labels.companion"), f.acompanhante],
                         [t("guest.labels.companionFor"), f.acompanhante_for],
@@ -1301,7 +1303,7 @@ function SharePreview({
           {snap.field.map((f) => (
             <div key={f.id} className="py-1 border-b border-gray-100 last:border-0">
               <div className="font-medium">
-                {fmtDate(f.event_date)} • {f.period} • {fmtTime(f.meeting_time)}
+                {fmtDate(f.event_date)} • {f.period} • {fmtTime(f.meeting_time)} • {ministryModalityLabel(f.ministry_modality)}
               </div>
               {f.meeting_point && <div className="text-xs text-gray-600">📍 {f.meeting_point}</div>}
               {f.acompanhante && (

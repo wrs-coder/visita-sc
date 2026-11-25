@@ -39,7 +39,7 @@ describe("help content fidelity", () => {
     const br = readFileSync("src/components/guest-workspace/BibleReadingTab.tsx", "utf8");
     for (const w of ["Pessoal", "Família", "Reunião", "Dias", "Continuar", "Meta de leitura"]) expect(br).toContain(w);
     const vt = readFileSync("src/components/visit-week/VisitProgramTabs.tsx", "utf8");
-    for (const w of ["Anciãos", "Estudos e Revisitas", "Reuniões", "Refeições", "Transporte"]) expect(vt).toContain(w);
+    for (const w of ["Anciãos", "Companhia (Ministério)", "Reuniões", "Refeições", "Transporte"]) expect(vt).toContain(w);
   });
 
   it("profile topic names match the real profile screen", () => {

@@ -1,4 +1,5 @@
 import { appConfirm } from "@/components/ui/app-dialogs";
+import { ModalityOtherPicker } from "@/components/ModalityOtherPicker";
 import { createFileRoute } from "@tanstack/react-router";
 import { TemplatesTabs } from "@/components/templates/TemplatesTabs";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -44,6 +45,7 @@ interface ItemDraft {
   day_offset: number;
   period: string;
   modality: Modality;
+  modality_other?: string;
   meeting_time: string;
   territory_number: string;
   territory_location: string;
@@ -108,6 +110,7 @@ function Page() {
           day_offset: it.day_offset,
           period: it.period || "Manhã",
           modality: ((it as { modality?: Modality }).modality) ?? "casa_em_casa",
+          modality_other: (it as { modality_other?: string | null }).modality_other ?? "",
           meeting_time: it.meeting_time ?? "",
           territory_number: it.territory_number ?? "",
           territory_location: it.territory_location ?? "",
@@ -213,6 +216,7 @@ function Page() {
           day_offset: it.day_offset,
           period: it.period,
           modality: it.modality,
+          modality_other: it.modality === "outro" ? (it.modality_other?.trim() || null) : null,
           meeting_time: it.meeting_time || null,
           territory_number: it.territory_number || null,
           territory_location: it.territory_location || null,
@@ -341,7 +345,7 @@ function Page() {
                     <section key={d}>
                       <div className="space-y-2">
                     {items.map((it, idx) => it.day_offset !== d ? null : (
-                      <CollapseItem key={idx} id={`ev:${idx}`} summary={[it.period, it.meeting_time?.slice(0, 5), modalityLabel(it.modality)].filter(Boolean).join(" · ")}>
+                      <CollapseItem key={idx} id={`ev:${idx}`} summary={[it.period, it.meeting_time?.slice(0, 5), (it.modality === "outro" && it.modality_other?.trim() ? it.modality_other.trim() : modalityLabel(it.modality))].filter(Boolean).join(" · ")}>
                       <div className="border rounded-md p-3 space-y-2 bg-muted/30">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Select value={it.period} onValueChange={(v) => updateItem(idx, { period: v })}>
@@ -359,14 +363,14 @@ function Page() {
                         </div>
                         <div>
                           <Label className="text-xs">{t("templates.field.modality")}</Label>
-                          <Select value={it.modality} onValueChange={(v) => updateItem(idx, { modality: v as Modality })}>
-                            <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {FIELD_MODALITIES.map((m) => (
-                                <SelectItem key={m} value={m}>{modalityLabel(m)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <ModalityOtherPicker
+                            className="mt-1"
+                            scope="field"
+                            options={FIELD_MODALITIES.map((m) => ({ value: m, label: modalityLabel(m) }))}
+                            value={it.modality}
+                            other={it.modality_other ?? ""}
+                            onChange={(k, o) => updateItem(idx, { modality: k as Modality, modality_other: o })}
+                          />
                         </div>
                         <InfoDisclosure className="bg-background" defaultOpen={!!it.observations} label={t("templates.field.observations")} filled={!!it.observations}>
                           <Textarea

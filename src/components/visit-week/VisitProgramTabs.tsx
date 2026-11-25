@@ -9,7 +9,7 @@ import { VisitProgramTopBar } from "./VisitProgramTopBar";
 export const VISIT_PROGRAM_TABS = [
   { to: "/programa-ancioes", key: "elders", label: "Anciãos", icon: BookOpen },
   { to: "/pauta-ancioes", key: "agenda", label: "Pauta", icon: ClipboardList },
-  { to: "/escala", key: "studies", label: "Estudos e Revisitas", icon: Users },
+  { to: "/escala", key: "studies", label: "Companhia (Ministério)", icon: Users },
   { to: "/reunioes-discursos", key: "meetings", label: "Reuniões", icon: MapPin },
   { to: "/refeicoes", key: "meals", label: "Refeições", icon: UtensilsCrossed },
   { to: "/transporte", key: "transport", label: "Transporte", icon: Car },

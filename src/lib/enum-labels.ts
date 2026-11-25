@@ -9,7 +9,7 @@ const PURPOSE: Record<string, string> = {
 const MODALITY: Record<string, string> = {
   casa_em_casa: "Casa em casa", estudos_revisitas: "Estudos e revisitas", telefone: "Telefone", cartas: "Cartas",
   telefone_cartas: "Telefone + Cartas", grupo_de_campo: "Grupo de campo", testemunho_publico: "Testemunho público",
-  revisitas: "Revisitas", estudos: "Estudos bíblicos",
+  revisitas: "Revisitas", estudos: "Estudos bíblicos", outro: "Outro",
 };
 
 /** "grupo_de_campo" → "Grupo de campo". */
@@ -25,3 +25,8 @@ const pick = (m: Record<string, string>) => (v: string | null | undefined) => (v
 export const encouragementCategoryLabel = pick(CATEGORY);
 export const recommendationPurposeLabel = pick(PURPOSE);
 export const modalityLabel = pick(MODALITY);
+/** Modalidade de campo: com "outro", mostra o texto digitado pelo SC. */
+export function fieldModalityText(modality: string | null | undefined, other?: string | null): string {
+  if (modality === "outro" && other && other.trim()) return other.trim();
+  return modalityLabel(modality);
+}

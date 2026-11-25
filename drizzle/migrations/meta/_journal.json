@@ -127,6 +127,13 @@
       "when": 1795261105301,
       "tag": "0017_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795614282751,
+      "tag": "0018_ministry_modality_and_field_other",
+      "breakpoints": true
     }
   ]
 }

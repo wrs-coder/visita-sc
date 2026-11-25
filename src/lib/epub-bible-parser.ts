@@ -670,6 +670,26 @@ function isInsideOutline(node: Node, outlineRoots: Set<Element>): boolean {
  *  Subárvores ruidosas (notas, cross-refs) são puladas inteiras. */
 const BLOCK_BREAK_TAGS = new Set(["p", "div", "br", "li", "blockquote", "section", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "td", "dd", "dt"]);
 
+/** Linhas de poesia marcadas só por classe (ex.: <span class="sl">). */
+const POETRY_LINE_CLASS = /(^|\s)(sl|sb|pl|ql|l|line|poetry|verseLine)(\s|$)/i;
+
+/** textContent com espaço entre blocos/linhas, para palavras não colarem. */
+export function blockText(root: Element | null | undefined): string {
+  if (!root) return "";
+  const buf: string[] = [];
+  const walk = (n: Node) => {
+    if (n.nodeType === 3) { buf.push(n.nodeValue ?? ""); return; }
+    if (n.nodeType !== 1) return;
+    const el = n as Element;
+    const brk = BLOCK_BREAK_TAGS.has((el.localName || el.nodeName).toLowerCase()) || POETRY_LINE_CLASS.test(el.getAttribute("class") ?? "");
+    if (brk) buf.push(" ");
+    el.childNodes.forEach(walk);
+    if (brk) buf.push(" ");
+  };
+  walk(root);
+  return buf.join("").replace(/\s+/g, " ").trim();
+}
+
 export function textBetween(
   doc: Document,
   start: Node,
@@ -707,7 +727,7 @@ export function textBetween(
       const elId = el.getAttribute("id") ?? "";
       // Mudança de linha/bloco no EPUB (poesia, parágrafos, <br>): separa com
       // espaço para a última palavra de uma linha não colar na próxima.
-      if (BLOCK_BREAK_TAGS.has((el.localName || el.nodeName).toLowerCase())) buf.push(" ");
+      if (BLOCK_BREAK_TAGS.has((el.localName || el.nodeName).toLowerCase()) || POETRY_LINE_CLASS.test(el.getAttribute("class") ?? "")) buf.push(" ");
 
       // Parada 2: âncora de verso "órfã" (não listada como marker mas presente no DOM).
       if (isVerseAnchorId(elId) && el !== start && !(start.nodeType === 1 && (start as Element).contains(el))) {
@@ -933,7 +953,7 @@ export function extractVersesFromDoc(
     // do mesmo bucket (ex.: 1 Pedro "Conteúdo do livro").
     if (looksLikeOutlinePage(doc)) return [];
 
-    const plain = (doc.body?.textContent ?? "").replace(/\s+/g, " ").trim();
+    const plain = blockText(doc.body);
     const out: ExtractedVerse[] = [];
     const regex = /(?:^|\s|[.;!?»"”])(\d{1,3})\s+(.{3,}?)(?=\s+\d{1,3}\s+|$)/g;
     let m: RegExpExecArray | null;

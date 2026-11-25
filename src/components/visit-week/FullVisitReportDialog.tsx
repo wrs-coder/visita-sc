@@ -1,4 +1,5 @@
 // Diálogo "Relatório executivo completo" da visita (usado no Dashboard e na
+import { fieldModalityText } from "@/lib/enum-labels";
 // página /relatorio/$visitId). Reutiliza a mesma engine premium em pdf-lib
 // (`generateVisitWeekPdf`) das abas da Semana da Visita, em vez do antigo
 // `window.print()` — que produzia apenas um "print" da tela.
@@ -200,7 +201,7 @@ export function FullVisitReportDialog({
           blocks: rows(fm).map((f) => ({
             heading: `${fmtDay(f.event_date)}${f.period ? ` · ${s(f.period)}` : ""}${fmtTime(f.meeting_time) ? ` · ${fmtTime(f.meeting_time)}` : ""}`,
             lines: [
-              kv("Modalidade", s(f.modality)),
+              kv("Modalidade", fieldModalityText(s(f.modality), s(f.modality_other))),
               kv("Local", s(f.meeting_location)),
               kv(
                 "Território",

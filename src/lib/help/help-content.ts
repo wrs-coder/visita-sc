@@ -173,7 +173,7 @@ const RAW_TOPICS: HelpTopic[] = [
     keywords: ["anciaos", "estudos", "revisitas", "reunioes", "refeicoes", "transporte", "checklist", "programa"],
     steps: [
       { before: "No menu lateral, na seção ", labelKey: "sidebar.sectionVisita", after: ", abra o programa da visita." },
-      { before: "No topo ficam as pílulas “Anciãos”, “Estudos e Revisitas”, “Reuniões”, “Refeições” e “Transporte”. Toque em uma para trocar de parte." },
+      { before: "No topo ficam as pílulas “Anciãos”, “Companhia (Ministério)”, “Reuniões”, “Refeições” e “Transporte”. Toque em uma para trocar de parte." },
       { before: "O app volta sempre para a última pílula que você abriu." },
       { before: "Os quadros podem ser recolhidos e expandidos; o que você digitou não se perde." },
       { before: "No menu lateral, ", labelKey: "sidebar.weekSummary", after: " mostra a semana inteira em uma tela." },

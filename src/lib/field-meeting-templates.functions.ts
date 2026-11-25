@@ -14,6 +14,7 @@ export const FIELD_MODALITIES = [
   "cartas",
   "telefone_cartas",
   "grupo_de_campo",
+  "outro",
 ] as const;
 
 export const FIELD_MODALITY_LABELS: Record<(typeof FIELD_MODALITIES)[number], string> = {
@@ -23,6 +24,7 @@ export const FIELD_MODALITY_LABELS: Record<(typeof FIELD_MODALITIES)[number], st
   cartas: "Cartas",
   telefone_cartas: "Telefone + Cartas",
   grupo_de_campo: "Grupo de campo",
+  outro: "Outro",
 };
 
 const modalitySchema = z.enum(FIELD_MODALITIES);
@@ -32,6 +34,7 @@ const itemSchema = z.object({
   day_offset: z.number().int().min(0).max(30),
   period: z.string().trim().min(1).max(20),
   modality: modalitySchema.default("casa_em_casa"),
+  modality_other: z.string().trim().max(80).nullable().optional(),
   meeting_time: z.string().trim().max(8).nullable().optional(),
   territory_number: z.string().trim().max(60).nullable().optional(),
   territory_location: z.string().trim().max(200).nullable().optional(),
@@ -199,6 +202,7 @@ export const duplicateFieldMeetingTemplate = createServerFn({ method: "POST" })
           day_offset: it.day_offset,
           period: it.period,
           modality: ((it as { modality?: (typeof FIELD_MODALITIES)[number] }).modality) ?? "casa_em_casa",
+          modality_other: (it as { modality_other?: string | null }).modality_other ?? null,
           meeting_time: it.meeting_time,
           territory_number: it.territory_number,
           territory_location: it.territory_location,
@@ -246,6 +250,7 @@ export const replaceFieldMeetingTemplateItems = createServerFn({ method: "POST" 
         day_offset: it.day_offset,
         period: it.period,
         modality: it.modality,
+        modality_other: it.modality === "outro" ? (it.modality_other || null) : null,
         meeting_time: it.meeting_time || null,
         territory_number: it.territory_number || null,
         territory_location: it.territory_location || null,
@@ -322,6 +327,7 @@ export const applyFieldMeetingTemplateForVisit = createServerFn({ method: "POST"
       event_date: dateAt(it.day_offset),
       period: it.period || "Manhã",
       modality: ((it as { modality?: (typeof FIELD_MODALITIES)[number] }).modality) ?? "casa_em_casa",
+      modality_other: (it as { modality_other?: string | null }).modality_other ?? null,
       meeting_time: it.meeting_time,
       territory_number: it.territory_number,
       territory_location: it.territory_location,

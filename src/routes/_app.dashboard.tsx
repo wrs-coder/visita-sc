@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ministryModalityLabel } from "@/lib/ministry-modality";
 import { telHref } from "@/lib/contact-format";
 import { setVisibleInterval } from "@/lib/visible-interval";
 import { readFnWithMirrorSafe, readOneWithMirror, readWithMirror } from "@/lib/local-first";
@@ -116,7 +117,7 @@ const ElderAgendaDashboardCard = lazy(() => import("@/components/elder-agenda/El
 const MeetingTimerButton = lazy(() => import("@/components/meeting/MeetingTimerButton"));
 const BoardProgramSheet = lazy(() => import("@/components/visit-week/BoardProgramSheet"));
 import { buildDayTimeline, groupByDate, resolveWeekdaySlot, type TimelineKind, type TimelineSource } from "@/lib/today-timeline";
-import { encouragementCategoryLabel, modalityLabel, recommendationPurposeLabel } from "@/lib/enum-labels";
+import { encouragementCategoryLabel, fieldModalityText, recommendationPurposeLabel } from "@/lib/enum-labels";
 import { EventReminderSync } from "@/components/reminders/EventReminders";
 
 
@@ -173,6 +174,7 @@ interface FieldAssignment {
   meeting_time: string | null;
   acompanhante: string | null;
   acompanhante_for: string | null;
+  ministry_modality?: string | null;
   contact_phone: string | null;
   notes: string | null;
 }
@@ -181,6 +183,7 @@ interface FieldMeetingToday {
   event_date: string;
   period: string;
   modality: string;
+  modality_other?: string | null;
   meeting_time: string | null;
   meeting_location: string | null;
   territory_number: string | null;
@@ -603,7 +606,7 @@ function Dashboard() {
           supabase
             .from("field_assignments")
             .select(
-              "id, event_date, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes",
+              "id, event_date, period, meeting_point, meeting_time, acompanhante, acompanhante_for, contact_phone, notes, ministry_modality",
             )
             .eq("visit_id", visit.id)
             .eq("is_active", true)
@@ -612,7 +615,7 @@ function Dashboard() {
           supabase
             .from("field_meetings")
             .select(
-              "id, event_date, period, modality, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer, observations",
+              "id, event_date, period, modality, modality_other, meeting_time, meeting_location, territory_number, territory_location, auxiliary_leaders, closing_prayer, observations",
             )
             .eq("visit_id", visit.id)
             .eq("is_active", true)
@@ -1102,7 +1105,7 @@ function Dashboard() {
               }))),
           ...fieldMeetingsWeek.map((f) => ({
             id: `f-${f.id}`, kind: "field" as const, date: f.event_date, time: f.meeting_time,
-            title: `${t("dashboard.fieldMeeting")} · ${modalityLabel(f.modality)}`,
+            title: `${t("dashboard.fieldMeeting")} · ${fieldModalityText(f.modality, f.modality_other)}`,
             subtitle: f.meeting_location,
             lines: brief(join(f.territory_number ? `Território ${f.territory_number}` : null, f.territory_location), join(f.auxiliary_leaders ? `Dirige: ${f.auxiliary_leaders}` : null, f.closing_prayer ? `Oração: ${f.closing_prayer}` : null)),
             details: toDetails([
@@ -1115,7 +1118,7 @@ function Dashboard() {
           })),
           ...assignmentsWeek.map((a) => ({
             id: `a-${a.id}`, kind: "study" as const, date: a.event_date, time: a.meeting_time,
-            title: `${t("dashboard.studiesVisits")}${a.acompanhante ? ` · ${a.acompanhante}` : ""}`,
+            title: `${ministryModalityLabel(a.ministry_modality)}${a.acompanhante ? ` · ${a.acompanhante}` : ""}`,
             subtitle: a.meeting_point,
             details: toDetails([
               [L("fieldStudies.meetingPoint", "Local de encontro"), a.meeting_point],
@@ -1341,7 +1344,7 @@ function Dashboard() {
                   return (
                     <li key={f.id} className="text-sm space-y-1.5 pb-2 border-b border-border/50 last:border-b-0 last:pb-0">
                       <span className="inline-flex px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {modalityLabel(f.modality)}
+                        {f.period}{f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""} · {fieldModalityText(f.modality, f.modality_other)}
                       </span>
                       {filled.length > 0 && (
                         <dl className="grid grid-cols-1 gap-y-1 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] sm:gap-x-3">
@@ -1366,6 +1369,7 @@ function Dashboard() {
                 render={(a) => {
                   const L = (k: string, d: string) => t(k, { defaultValue: d });
                   const rows: Array<[string, string | null]> = [
+                    ["Modalidade", ministryModalityLabel(a.ministry_modality)],
                     [L("fieldStudies.meetingPoint", "Local de encontro"), a.meeting_point],
                     [L("fieldStudies.companion", "Acompanhante para estudos"), a.acompanhante],
                     [L("fieldStudies.companionFor", "Acompanhante para"), a.acompanhante_for ? (ACOMPANHANTE_FOR_LABEL[a.acompanhante_for] ?? a.acompanhante_for) : null],
@@ -1851,7 +1855,7 @@ function Dashboard() {
                         {f.meeting_time ? ` · ${f.meeting_time.slice(0, 5)}` : ""}
                         {" · "}
                         <span className="text-xs text-muted-foreground">
-                          {modalityLabel(f.modality)}
+                          {fieldModalityText(f.modality, f.modality_other)}
                         </span>
                       </div>
                       {f.meeting_location && (
@@ -1904,6 +1908,7 @@ function Dashboard() {
                       <div className="font-medium">
                         {a.period}
                         {a.meeting_time ? ` · ${a.meeting_time.slice(0, 5)}` : ""}
+                        {` · ${ministryModalityLabel(a.ministry_modality)}`}
                       </div>
                       {a.acompanhante && (
                         <div>

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { ministryModalityLabel } from "@/lib/ministry-modality";
 import { BookOpen, Compass } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoList } from "./InfoList";
@@ -7,7 +8,7 @@ import { FoldCard } from "./FoldCard";
 type Str = string | null | undefined;
 export type TodayStudy = {
   id: string; period?: Str; meeting_time?: Str; meeting_point?: Str;
-  acompanhante?: Str; acompanhante_for?: Str; contact_phone?: Str; notes?: Str;
+  acompanhante?: Str; acompanhante_for?: Str; ministry_modality?: Str; contact_phone?: Str; notes?: Str;
 };
 export type TodayFieldMeeting = {
   id: string; period?: Str; meeting_time?: Str; modality?: Str; meeting_location?: Str;
@@ -38,6 +39,7 @@ export function TodayStudyFieldCards({
         <div key={f.id} className="border-l-2 border-primary/30 pl-3 py-1 space-y-1">
           <div className="text-sm font-medium">{head(f.period, f.meeting_time)}</div>
           <InfoList rows={[
+            ["Modalidade", ministryModalityLabel(f.ministry_modality)],
             [t("guest.labels.meetingPoint"), f.meeting_point],
             [t("guest.labels.companion"), f.acompanhante],
             [t("guest.labels.companionFor"), f.acompanhante_for],

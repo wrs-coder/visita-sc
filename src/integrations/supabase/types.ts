@@ -1041,6 +1041,7 @@ export type Database = {
           is_active: boolean
           meeting_point: string | null
           meeting_time: string | null
+          ministry_modality: string | null
           notes: string | null
           period: string
           updated_at: string
@@ -1056,6 +1057,7 @@ export type Database = {
           is_active?: boolean
           meeting_point?: string | null
           meeting_time?: string | null
+          ministry_modality?: string | null
           notes?: string | null
           period: string
           updated_at?: string
@@ -1071,6 +1073,7 @@ export type Database = {
           is_active?: boolean
           meeting_point?: string | null
           meeting_time?: string | null
+          ministry_modality?: string | null
           notes?: string | null
           period?: string
           updated_at?: string
@@ -1096,6 +1099,7 @@ export type Database = {
           meeting_location: string | null
           meeting_time: string | null
           modality: Database["public"]["Enums"]["field_modality"]
+          modality_other: string | null
           observations: string | null
           period: string
           requested_fields: string[]
@@ -1114,6 +1118,7 @@ export type Database = {
           meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
+          modality_other?: string | null
           observations?: string | null
           period?: string
           requested_fields?: string[]
@@ -1132,6 +1137,7 @@ export type Database = {
           meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
+          modality_other?: string | null
           observations?: string | null
           period?: string
           requested_fields?: string[]
@@ -1157,6 +1163,7 @@ export type Database = {
           created_at: string
           id: string
           modality: Database["public"]["Enums"]["field_modality"]
+          modality_other: string | null
           name: string
           observations: string | null
           superintendent_id: string
@@ -1167,6 +1174,7 @@ export type Database = {
           created_at?: string
           id?: string
           modality?: Database["public"]["Enums"]["field_modality"]
+          modality_other?: string | null
           name: string
           observations?: string | null
           superintendent_id: string
@@ -1177,6 +1185,7 @@ export type Database = {
           created_at?: string
           id?: string
           modality?: Database["public"]["Enums"]["field_modality"]
+          modality_other?: string | null
           name?: string
           observations?: string | null
           superintendent_id?: string
@@ -1195,6 +1204,7 @@ export type Database = {
           meeting_location: string | null
           meeting_time: string | null
           modality: Database["public"]["Enums"]["field_modality"]
+          modality_other: string | null
           observations: string | null
           period: string
           requested_fields: string[] | null
@@ -1213,6 +1223,7 @@ export type Database = {
           meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
+          modality_other?: string | null
           observations?: string | null
           period: string
           requested_fields?: string[] | null
@@ -1231,6 +1242,7 @@ export type Database = {
           meeting_location?: string | null
           meeting_time?: string | null
           modality?: Database["public"]["Enums"]["field_modality"]
+          modality_other?: string | null
           observations?: string | null
           period?: string
           requested_fields?: string[] | null
@@ -2487,6 +2499,7 @@ export type Database = {
         | "cartas"
         | "telefone_cartas"
         | "grupo_de_campo"
+        | "outro"
       meal_type: "lunch" | "dinner" | "breakfast"
     }
     CompositeTypes: {
@@ -2649,6 +2662,7 @@ export const Constants = {
         "cartas",
         "telefone_cartas",
         "grupo_de_campo",
+        "outro",
       ],
       meal_type: ["lunch", "dinner", "breakfast"],
     },
