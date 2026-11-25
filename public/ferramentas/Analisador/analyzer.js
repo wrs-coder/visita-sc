@@ -206,27 +206,31 @@
 
   /**
    * Meta anual de pioneiro regular (600 h = 50 h/mês, set–ago).
-   * Começou no ano: meta = 50 × meses do início até agosto. Início = mês com "pioneiro regular" na observação, senão o primeiro mês com horas.
-   * upTo = último mês com relatório na congregação dentro do ano (ou o informado).
+   * Início como PR = primeiro mês com horas sem tique de auxiliar e sem observação de especial/missionário
+   * (só pioneiros e missionários relatam horas). Depois do início, meses com 0 h continuam contando.
+   * upTo = último mês com relatório na congregação dentro do ano (ou o informado); ano encerrado pelo mês do aparelho = até agosto.
    */
-  function pioneerYear(cards, year, upTo) {
+  var NOT_RP = /especial|mission[aá]ri/i;
+  function prStart(h, mine) {
+    var s = mine.filter(function (k) { var m = h.months[k].m; return (m.hours || 0) > 0 && !m.auxiliary && !NOT_RP.test(m.comments || ""); })[0];
+    return s || mine[0];
+  }
+  function pioneerYear(cards, year, upTo, noPrev) {
     var from = (year - 1) + "-09", to = year + "-08", all = monthsBetween(from, to);
     var rep = reportedMonths(cards).filter(function (k) { return k >= from && k <= to; });
+    var closed = closedMonth() >= to;
     var last = upTo && upTo >= from ? (upTo > to ? to : upTo) : rep[rep.length - 1];
     var out = [];
     people(cards).forEach(function (h) {
       var mine = all.filter(function (k) { return h.months[k] && h.months[k].p.status === "Regular Pioneer"; });
       if (!mine.length) return;
       var at = function (k) { return h.months[k].m; };
-      var noted = mine.filter(function (k) { return /pioneir[oa]\s+regular/i.test(at(k).comments || ""); })[0];
-      var withH = mine.filter(function (k) { return (at(k).hours || 0) > 0; })[0];
-      var start = noted || withH || mine[0];
-      if (start < mine[0]) start = mine[0];
+      var start = prStart(h, mine);
       var span = monthsBetween(start, to), elapsed = last && last >= start ? monthsBetween(start, last) : [];
       var done = elapsed.reduce(function (s, k) { return s + ((h.months[k] && at(k).hours) || 0); }, 0);
-      var low = elapsed.filter(function (k) { return h.months[k] && h.months[k].p.status === "Regular Pioneer" && (at(k).hours || 0) < 50; })
-        .map(function (k) { return { month: k, hours: at(k).hours == null ? null : at(k).hours, comments: String(at(k).comments || "").trim() }; });
-      var fullYear = all.every(function (k) { return rep.indexOf(k) >= 0; });
+      var low = elapsed.filter(function (k) { return !h.months[k] || (at(k).hours || 0) < 50; })
+        .map(function (k) { return { month: k, hours: h.months[k] && at(k).hours != null ? at(k).hours : null, comments: h.months[k] ? String(at(k).comments || "").trim() : "" }; });
+      var fullYear = closed && last === to;
       var shortYear = fullYear && start === from && done < 600;
       var goalYear = 50 * span.length, goalNow = 50 * elapsed.length, left = span.length - elapsed.length;
       out.push({
@@ -234,9 +238,16 @@
         months: elapsed.length, done: done, goalYear: goalYear, goalNow: goalNow, diff: done - goalNow,
         avg: elapsed.length ? Math.round(done / elapsed.length * 10) / 10 : 0,
         need: left > 0 ? Math.max(0, Math.ceil((goalYear - done) / left)) : 0, left: left, low: low,
-        fullYear: fullYear, shortYear: shortYear, missing: shortYear ? Math.round((600 - done) * 10) / 10 : 0
+        fullYear: fullYear, shortYear: shortYear, missing: shortYear ? Math.round((600 - done) * 10) / 10 : 0,
+        prevMissing: 0, prevLow: []
       });
     });
+    if (!noPrev) {
+      // Alerta do ano anterior aparece também no card do ano selecionado.
+      var prev = {};
+      pioneerYear(cards, year - 1, null, true).list.forEach(function (x) { if (x.shortYear) prev[normName(x.name)] = x; });
+      out.forEach(function (x) { var p = prev[normName(x.name)]; if (p) { x.prevMissing = p.missing; x.prevLow = p.low; } });
+    }
     out.sort(function (a, b) { return a.diff - b.diff || a.name.localeCompare(b.name, "pt"); });
     return { year: year, upTo: last || "", list: out };
   }

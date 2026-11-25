@@ -305,6 +305,7 @@
         "<p>Feitas " + hrs(x.done) + " · Meta até agora " + hrs(x.goalNow) + (x.late ? " · Meta do ano " + hrs(x.goalYear) + " (" + (x.goalYear / 50) + " meses × 50)" : "") + "</p>" +
         "<p>Média " + hrs(x.avg) + "/mês" + (x.left ? " · precisa " + hrs(x.need) + "/mês até agosto" : "") + "</p>" +
         (x.shortYear ? '<div class="lowm"><p><b>⚠ (Ano anterior faltou: ' + hrs(x.missing) + ")</b></p></div>" : "") +
+        (!x.shortYear && x.prevMissing ? '<div class="lowm"><p><b>⚠ (Ano anterior faltou: ' + hrs(x.prevMissing) + ")</b></p><small>Meses do ano anterior abaixo de 50 h:</small>" + x.prevLow.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + "</p>"; }).join("") + "</div>" : "") +
         (x.low && x.low.length ? '<div class="lowm"><small>' + (x.shortYear ? "Meses abaixo de 50 h:" : "Abaixo de 50 h:") + '</small>' + x.low.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? " · “" + esc(l.comments) + "”" : "") + "</p>"; }).join("") + "</div>" : "") + "</button>";
     }).join("");
   }
@@ -317,7 +318,7 @@
     box.hidden = false;
     $("rpHead").textContent = "Ano de serviço " + y + " (set/" + (y - 1) + " a ago/" + y + ")" + (r.upTo ? " · até " + A.label(r.upTo) + ": meta " + hrs(50 * A.monthsBetween((y - 1) + "-09", r.upTo).length) : "");
     var low = r.list.filter(function (x) { return x.diff < 0; }).length;
-    var short = r.list.filter(function (x) { return x.shortYear; }).length;
+    var short = r.list.filter(function (x) { return x.shortYear || x.prevMissing; }).length;
     $("rpLow").textContent = (low ? low + " ⚠" : "") + (short ? (low ? " · " : "") + "⚠ " + short + " não completaram as 600 h" : "");
     $("rpList").innerHTML = r.list.length ? rpRows(r) : '<p class="muted">Nenhum pioneiro regular com cartão deste ano.</p>';
   }
@@ -807,7 +808,7 @@
       goals.list.forEach(function (x) {
         need(40);
         text(x.name + (x.late ? " (iniciou em " + A.label(x.start) + ")" : "") + ": " + (x.diff < 0 ? "atrasado " + hrs(-x.diff) : "em dia +" + hrs(x.diff)), { bold: true, gap: 1, color: x.diff < 0 ? red : ink });
-        if (x.shortYear) text("(Ano anterior faltou: " + hrs(x.missing) + ")", { indent: 10, color: red, gap: 2 });
+        if (x.shortYear || x.prevMissing) text("(Ano anterior faltou: " + hrs(x.shortYear ? x.missing : x.prevMissing) + ")", { indent: 10, color: red, gap: 2 });
         text("Feitas " + hrs(x.done) + " - meta até agora " + hrs(x.goalNow) + " - meta do ano " + hrs(x.goalYear) + " - média " + hrs(x.avg) + "/mês" + (x.left ? " - precisa " + hrs(x.need) + "/mês" : ""), { indent: 10, color: grey, gap: 2 });
         (x.low || []).forEach(function (l) { text("Abaixo de 50 h em " + A.label(l.month) + ": " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? ' - "' + l.comments + '"' : ""), { indent: 20, size: 9, color: grey, gap: 2 }); });
         y -= 6;
