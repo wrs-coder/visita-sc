@@ -24,6 +24,8 @@ import { TemplateExtraBlock } from "@/components/meetings/TemplateExtraBlock";
 import { MealsReportDialog } from "@/components/visit-week/MealsReportDialog";
 import { VisitWeekReportButton } from "@/components/visit-week/VisitWeekReportDialog";
 import { readWithMirror } from "@/lib/local-first";
+import { createPendingPatches } from "@/lib/pending-patches";
+import { patchMirrorRow } from "@/lib/local-db";
 
 export const Route = createFileRoute("/_app/refeicoes")({ component: Page });
 
@@ -49,6 +51,7 @@ function Page() {
   const dateLocale = getDateLocale(i18n.language);
   const isSuper = role === "superintendent";
   const [meals, setMeals] = useState<Meal[]>([]);
+  const pending = useMemo(() => createPendingPatches(), []);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
   const [editEnabled, setEditEnabled] = useState(false);
@@ -86,7 +89,7 @@ function Page() {
           filter: (r) => r.visit_id === visit.id,
         }),
       ]);
-      setMeals(mealsRes.rows as Meal[]);
+      setMeals(pending.overlay(mealsRes.rows as Meal[]));
       const map: Record<string, string> = {};
       for (const n of notesRes.rows) map[n.meal_date] = n.notes;
       setDayNotes(map);
@@ -97,7 +100,7 @@ function Page() {
       .on("postgres_changes", { event: "*", schema: "public", table: "meal_day_notes", filter: `visit_id=eq.${visit.id}` }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [visit]);
+  }, [visit, pending]);
 
   const saveDayNote = useCallback(async (date: string, notes: string) => {
     if (!visit) return;
@@ -108,11 +111,13 @@ function Page() {
   const update = useCallback(async (id: string, patch: Partial<Meal>) => {
     setSavingId(id);
     setMeals((s) => s.map((x) => x.id === id ? { ...x, ...patch } : x));
+    pending.set(id, patch);
     const { error, queued } = await offlineUpdate("meals", patch, { id });
     setSavingId(null);
-    if (error) toast.error(error.message);
-    else if (queued) toast.success(t("common.savedOffline"));
-  }, [t]);
+    if (error) { pending.drop(id); toast.error(error.message); return; }
+    void patchMirrorRow("meals", id, patch);
+    if (queued) toast.success(t("common.savedOffline"));
+  }, [t, pending]);
 
   const add = async (date: string, type: MealKey) => {
     if (!visit) return;

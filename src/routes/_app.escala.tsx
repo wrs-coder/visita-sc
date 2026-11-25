@@ -10,6 +10,8 @@ import { useTranslation } from "react-i18next";
 import { useActiveVisit } from "@/hooks/use-active-visit";
 import { supabase } from "@/integrations/supabase/client";
 import { readWithMirror } from "@/lib/local-first";
+import { createPendingPatches } from "@/lib/pending-patches";
+import { patchMirrorRow } from "@/lib/local-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +51,7 @@ function Page() {
   const dateLocale = getDateLocale(i18n.language);
   const isSuper = role === "superintendent";
   const [rows, setRows] = useState<Row[]>([]);
+  const pending = useMemo(() => createPendingPatches(), []);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editEnabled, setEditEnabled] = useState(false);
   const editAllowed = !isSuper || editEnabled;
@@ -70,7 +73,7 @@ function Page() {
           String(a.event_date).localeCompare(String(b.event_date)) ||
           String(a.period).localeCompare(String(b.period)),
       });
-      setRows(res.rows as Row[]);
+      setRows(pending.overlay(res.rows as Row[]));
     };
     load();
     const ch = supabase
@@ -80,16 +83,18 @@ function Page() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [visit]);
+  }, [visit, pending]);
 
   const update = useCallback(async (id: string, patch: Partial<Row>) => {
     setSavingId(id);
     setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    pending.set(id, patch);
     const { error, queued } = await offlineUpdate("field_assignments", patch, { id });
     setSavingId(null);
-    if (error) toast.error(error.message);
-    else if (queued) toast.success(t("common.savedOffline"));
-  }, [t]);
+    if (error) { pending.drop(id); toast.error(error.message); return; }
+    void patchMirrorRow("field_assignments", id, patch);
+    if (queued) toast.success(t("common.savedOffline"));
+  }, [t, pending]);
 
   const add = async (date: string, period: string) => {
     if (!visit) return;

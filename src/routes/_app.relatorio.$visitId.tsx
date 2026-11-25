@@ -8,6 +8,7 @@ import { Printer, ArrowLeft, FileDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getDateLocale } from "@/lib/date-locale";
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
 import { saveBlob } from "@/lib/share";
 import { FullVisitReportDialog } from "@/components/visit-week/FullVisitReportDialog";
 
@@ -134,7 +135,11 @@ function ReportPage() {
           <Button variant="outline" size="sm" onClick={() => setPdfOpen(true)}>
             <FileDown className="h-4 w-4 mr-1" /> PDF
           </Button>
-          <Button size="sm" onClick={() => window.print()}>
+          <Button size="sm" onClick={() => {
+            // O aplicativo Android não tem impressão pela página: abre o PDF, que pode ser impresso ou compartilhado.
+            if (Capacitor.isNativePlatform()) setPdfOpen(true);
+            else window.print();
+          }}>
             <Printer className="h-4 w-4 mr-1" /> {t("report.print")}
           </Button>
           <FullVisitReportDialog

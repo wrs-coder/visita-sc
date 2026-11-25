@@ -83,6 +83,8 @@
 ## Auditoria de horários e pedidos seguintes
 - [x] Mapear edição, salvamento e exibição do dia/horário dos pioneiros; diagnóstico em .lovable/reviews/horarios-pioneiros.md
 - [ ] Padronizar horários de Reuniões e Discursos após revisão do diagnóstico e aprovação do plano
-- [ ] Corrigir impressão do relatório da visita; aguarda diagnóstico do fluxo e aprovação da alteração
+- [x] Corrigir impressão do relatório da visita (no app abre o PDF)
 - [ ] Aumentar fonte dos campos do Pastoreio dos anciãos; aguarda mockup aprovado
 - [ ] Conferir temas escuros e configuração do telefone; aguarda esclarecimento de qual configuração foi citada
+- [x] SP-172: horário salvo não volta (Estudos/Refeições); reaplicar modelo não duplica turnos
+- [ ] SP-172: aviso quando a visita não inclui domingo; aguarda mockup aprovado

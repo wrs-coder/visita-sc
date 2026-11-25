@@ -158,6 +158,14 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
         (r as { acompanhante_for?: string | null }).acompanhante_for ?? null,
       )),
     );
+    // Linhas já existentes por dia+turno: um horário alterado na visita não
+    // pode fazer o modelo inserir de novo a linha com o horário antigo.
+    const slotCount = new Map<string, number>();
+    for (const r of exField.data ?? []) {
+      const k = `${r.event_date as string}|${(r as { period?: string | null }).period ?? "Manhã"}`;
+      slotCount.set(k, (slotCount.get(k) ?? 0) + 1);
+    }
+    const tplSeen = new Map<string, number>();
     const mealDates = new Set((exMeals.data ?? []).map((r) => r.meal_date as string));
     const transpDates = new Set((exTransp.data ?? []).map((r) => r.event_date as string | null).filter(Boolean) as string[]);
 
@@ -170,7 +178,10 @@ export const applyTemplateToVisit = createServerFn({ method: "POST" })
       if (it.kind === "study") {
         const periodVal = str(p.period) ?? "Manhã";
         const sig = fieldSig(targetDate, periodVal, time(p.meeting_time), str(p.meeting_point), str(p.acompanhante), str(p.acompanhante_for));
-        if (fieldSigs.has(sig)) { skipped++; continue; }
+        const slotK = `${targetDate}|${periodVal}`;
+        const nth = (tplSeen.get(slotK) ?? 0) + 1;
+        tplSeen.set(slotK, nth);
+        if (fieldSigs.has(sig) || nth <= (slotCount.get(slotK) ?? 0)) { skipped++; continue; }
         const { error: insErr } = await supabaseAdmin.from("field_assignments").insert({
           visit_id: data.visitId, event_date: targetDate,
           period: periodVal,
