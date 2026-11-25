@@ -76,6 +76,13 @@
 - [x] (01) Balão bíblico: palavras juntas em Provérbios
 - [x] (02) Companhia (Ministério) com modalidade + Outro
 - [x] (03) Campo: modalidade Outro
-- [ ] (04) Pastoreio: permitir ao SC editar os dias e horários pré-selecionados só nesta visita; aguardando aprovação do esboço
+- [x] (04) Pastoreio: SC edita dias e horários só nesta visita; salvamento e releitura conferidos, mantendo os modelos
 - [x] Sugestão: lembrar textos de "Outro"
 - [x] Sugestão: selo "editado nesta visita" (já existia nas informações do modelo)
+
+## Auditoria de horários e pedidos seguintes
+- [x] Mapear edição, salvamento e exibição do dia/horário dos pioneiros; diagnóstico em .lovable/reviews/horarios-pioneiros.md
+- [ ] Padronizar horários de Reuniões e Discursos após revisão do diagnóstico e aprovação do plano
+- [ ] Corrigir impressão do relatório da visita; aguarda diagnóstico do fluxo e aprovação da alteração
+- [ ] Aumentar fonte dos campos do Pastoreio dos anciãos; aguarda mockup aprovado
+- [ ] Conferir temas escuros e configuração do telefone; aguarda esclarecimento de qual configuração foi citada
