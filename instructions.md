@@ -225,3 +225,5 @@ Observação: a trava é uma regra de trabalho verificada por teste automático 
 
 - Toda mudança ou ajuste de tela, e toda função nova que afete diretamente o uso do aplicativo, **deve ser adicionada à "Ajuda" do app (src/lib/help/help-content.ts) no mesmo trabalho**, com os nomes reais dos botões.
 - Uma entrega que mude o uso sem atualizar a Ajuda é considerada incompleta (ver item 9 do checklist da seção 11).
+
+- Caixas de confirmação: nunca usar `confirm()`/`window.confirm()` do navegador; usar sempre `appConfirm` (src/components/ui/app-dialogs.tsx), no estilo iOS/One UI. O teste no-native-confirm.test.ts barra regressões.

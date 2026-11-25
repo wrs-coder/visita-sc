@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Anexos de um cartão: foto/PDF ficam no aparelho; o SC liga "Enviar" para os anciãos verem.
 import { useState } from "react";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ export function AgendaAttachments({ card, editable, api, onChange, offline }: {
     } catch { toast.error("Sem conexão."); } finally { setBusy(null); }
   };
   const remove = async (a: AgendaAttachment) => {
-    if (!confirm(`Tirar o anexo "${a.title}"?`)) return;
+    if (!await appConfirm({ description: `Tirar o anexo "${a.title}"?`, confirmLabel: "Tirar", destructive: true })) return;
     if (a.cloudPath && api?.remove) { try { await api.remove(a.cloudPath); } catch { /* limpa depois de 30 dias */ } }
     await dropLocal(a.id);
     onChange(card.attachments.filter((x) => x.id !== a.id));

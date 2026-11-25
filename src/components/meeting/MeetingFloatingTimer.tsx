@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Boia do controle de tempo da reunião (minimizado): mostra o tempo da parte atual e
 // controla anterior / iniciar-pausar / próxima, lendo e gravando o MESMO estado da tela
 // inteira (event-timer.ts, relógio real) — nada reinicia. Tamanho guardado no aparelho.
@@ -45,10 +46,10 @@ export default function MeetingFloatingTimer({ timerKey, parts, onOpen }: { time
       }
     })).then((h) => { if (alive) off = () => void h.remove(); else void h.remove(); });
     // Pede a permissão "Sobrepor a outros apps" uma única vez.
-    void overlayGranted().then((ok) => {
+    void overlayGranted().then(async (ok) => {
       if (ok) return;
       try { if (localStorage.getItem(ASKED_KEY)) return; localStorage.setItem(ASKED_KEY, "1"); } catch { return; }
-      if (window.confirm(t("meeting.overlayAsk", { defaultValue: "Para o tempo ficar na tela fora do Visita SC, permita \"Sobrepor a outros apps\"." }))) void requestOverlay();
+      if (await appConfirm(t("meeting.overlayAsk", { defaultValue: "Para o tempo ficar na tela fora do Visita SC, permita \"Sobrepor a outros apps\"." }))) void requestOverlay();
     });
     return () => { alive = false; off?.(); void takeMeetingOverlay(); };
   }, [timerKey, parts, t]);

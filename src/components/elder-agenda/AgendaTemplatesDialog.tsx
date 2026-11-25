@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Modelos de pauta do SC: usar, salvar o atual, padrão para novas visitas, renomear, apagar,
 // exportar/importar arquivo e voltar ao modelo original. Sincroniza entre os aparelhos da conta.
 import { useRef, useState } from "react";
@@ -63,10 +64,10 @@ export function AgendaTemplatesDialog({ open, onOpenChange, blocks, onApply, hea
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Button size="sm" onClick={() => apply(m.blocks)}>Usar</Button>
-                  <Button size="sm" variant="outline" disabled={busy} onClick={() => { if (confirm(`Substituir "${m.name}" pela montagem atual?`)) void run(() => t.update(m.id, { blocks }), "Modelo atualizado."); }}>Atualizar</Button>
+                  <Button size="sm" variant="outline" disabled={busy} onClick={async () => { if (await appConfirm(`Substituir "${m.name}" pela montagem atual?`)) void run(() => t.update(m.id, { blocks }), "Modelo atualizado."); }}>Atualizar</Button>
                   <Button size="sm" variant="outline" disabled={busy} onClick={() => { const n = prompt("Novo nome", m.name); if (n?.trim()) void run(() => t.update(m.id, { name: n.trim() })); }}>Renomear</Button>
                   <Button size="sm" variant="ghost" aria-label="Exportar" onClick={() => void exportOne(m.name, m.blocks)}><Download className="h-4 w-4" /></Button>
-                  <Button size="sm" variant="ghost" aria-label="Apagar" disabled={busy} onClick={() => { if (confirm(`Apagar o modelo "${m.name}"?`)) void run(() => t.remove(m.id)); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button size="sm" variant="ghost" aria-label="Apagar" disabled={busy} onClick={async () => { if (await appConfirm(`Apagar o modelo "${m.name}"?`)) void run(() => t.remove(m.id)); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </div>
               </div>
             ))}
@@ -77,7 +78,7 @@ export function AgendaTemplatesDialog({ open, onOpenChange, blocks, onApply, hea
             <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}><Upload className="h-4 w-4" />Importar</Button>
             <Button variant="outline" onClick={() => void exportOne("pauta-atual", blocks)}><Download className="h-4 w-4" />Exportar atual</Button>
           </div>
-          <Button variant="ghost" className="w-full" onClick={() => { if (confirm("Voltar a pauta ao modelo original? O que já foi escrito nos blocos originais continua.")) apply(defaultBlocks()); }}>
+          <Button variant="ghost" className="w-full" onClick={async () => { if (await appConfirm("Voltar a pauta ao modelo original? O que já foi escrito nos blocos originais continua.")) apply(defaultBlocks()); }}>
             <RotateCcw className="h-4 w-4" />Restaurar modelo original
           </Button>
           <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => { void onImport(e.target.files?.[0]); e.target.value = ""; }} />

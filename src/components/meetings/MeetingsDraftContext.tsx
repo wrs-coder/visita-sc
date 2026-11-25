@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Rascunho local global para a aba "Reuniões e Discursos".
 //
 // Comportamento: as edições nos campos não vão direto ao servidor; ficam
@@ -114,9 +115,9 @@ export function MeetingsDraftProvider({
 
   // Bloqueio de navegação interna (menu lateral / outras rotas) com rascunho pendente.
   useBlocker({
-    shouldBlockFn: () => {
+    shouldBlockFn: async () => {
       if (!dirty) return false;
-      return !window.confirm(
+      return !await appConfirm(
         i18n.t("meetingsTalks.draft.leaveConfirm", {
           defaultValue: "Há um rascunho com alterações não salvas nesta tela. Sair sem clicar em \"Salvar dados\" mantém o rascunho local, mas o servidor não será atualizado. Continuar?",
         }),

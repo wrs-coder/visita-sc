@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // "Informações adicionais dos anciãos": cada ancião preenche o seu cartão (nome opcional, checklist,
 // perguntas e texto). Fora da tela cheia só um balão com o total; as respostas abrem em carrossel.
 import { useRef, useState } from "react";
@@ -63,7 +64,7 @@ export function ElderInfoResponses({ card, isSc, canWrite, myHash, onCommit, inl
   const startForElder = () => setEdit({ id: newId(), authorKey: "", name: "", checks: {}, answers: {}, html: "", updatedAt: "", bySc: true });
   const startNew = () => setEdit(mine ?? { id: newId(), authorKey: myHash, name: "", checks: {}, answers: {}, html: "", updatedAt: "" });
   const remove = async (r: AgendaElderResponse) => {
-    if (!confirm("Apagar esta resposta?")) return;
+    if (!await appConfirm("Apagar esta resposta?")) return;
     if (await onCommit(list.filter((x) => x.id !== r.id))) toast.success("Resposta apagada.");
   };
 

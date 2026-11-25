@@ -1,3 +1,4 @@
+import { appConfirm } from "@/components/ui/app-dialogs";
 // Tela da "Pauta – Reunião com Anciãos", montada em blocos.
 // SC: renomeia, reordena, oculta, apaga e adiciona blocos, escolhe quem edita cada um, define um prazo
 // e usa/salva modelos. Anciãos (com ou sem cadastro) preenchem o que foi liberado até o prazo.
@@ -191,12 +192,12 @@ export function ElderAgendaView({ data, save, onRefresh, onPublish }: { data: Ag
     if (b.cards.length >= MAX_CARDS) { toast.error(`Limite de ${MAX_CARDS} cartões por tópico.`); return; }
     patchBlock(b.id, { cards: [...b.cards, newCard(type)] });
   };
-  const removeBlock = (b: AgendaBlock) => {
-    if (!confirm(`Apagar o tópico "${b.title}"? Os cartões dele também saem da pauta.`)) return;
+  const removeBlock = async (b: AgendaBlock) => {
+    if (!await appConfirm(`Apagar o tópico "${b.title}"? Os cartões dele também saem da pauta.`)) return;
     patch({ blocks: p.blocks.filter((x) => x.id !== b.id) });
   };
-  const removeCard = (b: AgendaBlock, c: AgendaCard) => {
-    if (!confirm(`Tirar o cartão "${CARD_TYPE_LABEL[c.type]}" deste tópico?`)) return;
+  const removeCard = async (b: AgendaBlock, c: AgendaCard) => {
+    if (!await appConfirm(`Tirar o cartão "${CARD_TYPE_LABEL[c.type]}" deste tópico?`)) return;
     patchBlock(b.id, { cards: b.cards.filter((x) => x.id !== c.id) });
   };
 
@@ -226,15 +227,15 @@ export function ElderAgendaView({ data, save, onRefresh, onPublish }: { data: Ag
   const switchMode = async (m: AgendaMode) => {
     if (m === mode) return;
     if (dirty && mode !== "read") {
-      if (confirm("Salvar as alterações antes de trocar de modo?")) { if (!(await onSave())) return; }
-      else if (!confirm("Descartar as alterações não salvas?")) return;
+      if (await appConfirm({ title: "Salvar as alterações antes de trocar de modo?", confirmLabel: "Salvar", cancelLabel: "Não salvar", destructive: false })) { if (!(await onSave())) return; }
+      else if (!await appConfirm("Descartar as alterações não salvas?")) return;
       else { setDirty(false); setP(data.payload); }
     }
     setMode(m);
   };
   const refresh = async () => {
     if (!onRefresh) return;
-    if (dirty && !confirm("Há alterações não salvas. Descartar e atualizar a pauta?")) return;
+    if (dirty && !await appConfirm("Há alterações não salvas. Descartar e atualizar a pauta?")) return;
     setDirty(false); setRefreshing(true);
     try { await onRefresh(); toast.success("Pauta atualizada."); } catch { toast.error("Sem conexão."); } finally { setRefreshing(false); }
   };
