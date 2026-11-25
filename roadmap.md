@@ -1,4 +1,10 @@
 # Roadmap
+## Analisador — situações e resumos (25/11)
+- [x] Adicionar Pioneiro Especial e Missionário em campo, preservando importação e exportação.
+- [x] Abrir listas e cartões das pessoas em todos os indicadores dos resumos.
+- [x] Incluir Anciãos e servos sem estudos e controle de inclusão nos PDFs gerais, individuais e em lote.
+- [x] Testar regras, fluxo completo em celular e computador e isolamento do Visita SC (96 testes das ferramentas; 981 no total; 12 PDFs conferidos).
+
 - [x] Pastoreio: agendar + salvar em notas juntos (mapeamento de campos)
 - [x] Ficar no Programa da visita após salvar + "Salvar todos"
 - [x] Dia/Horário do pastoreio → data/hora no cronograma

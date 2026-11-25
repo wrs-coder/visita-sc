@@ -17,6 +17,15 @@
   function shared(m) { return !!(m && (m.participated || (m.hours || 0) > 0 || (m.studies || 0) > 0)); }
   function hasData(m) { return !!(m && (m.participated || m.auxiliary || m.studies != null || m.hours != null || m.comments)); }
   function fullName(p) { return [p.firstname, p.middlename, p.lastname].join(" ").replace(/\s+/g, " ").trim() || p.file || "Sem nome"; }
+  // Preserva o formato já usado pelo leitor S-21 e pelos exportadores.
+  function statusOf(p) { return p.special === "fm" ? "FieldMissionary" : p.special === "sp" ? "Special Pioneer" : p.status; }
+  function setStatus(p, status) {
+    p.special = status === "FieldMissionary" ? "fm" : status === "Special Pioneer" ? "sp" : "";
+    p.status = p.special ? "Regular Pioneer" : status;
+    p.notes = (p.notes || []).filter(function (n) { return n !== "Marcado como pioneiro especial" && n !== "Marcado como missionário em campo"; });
+    return p;
+  }
+  function exportTiles(tiles, opts) { return tiles.filter(function (t) { return t.key !== "apptNoStudies" || !opts || opts.apptNoStudies !== false; }); }
 
   /** Meses em que algum cartão tem relatório (meses depois disso ainda não aconteceram). */
   function reportedMonths(cards) {
@@ -82,7 +91,7 @@
     var rule = opts.studyRule || "last";
     var start = opts.from ? opts.from + "-01" : "", end = opts.to ? opts.to + "-31" : "";
     var c = { elder: 0, ms: 0, bap: 0, unbap: 0, newUnbap: 0 };
-    var L = { aux: [], newBap: [], irregular: [], apptAux: [], studies: [], rpLow: [], newUnbap: [] };
+    var L = { elder: [], ms: [], bap: [], unbap: [], aux: [], newBap: [], irregular: [], apptAux: [], studies: [], apptNoStudies: [], rpLow: [], newUnbap: [] };
 
     people(cards).forEach(function (h) {
       if (opts.area && opts.area !== "all" && h.area !== opts.area) return;
@@ -91,6 +100,11 @@
       if (p.appt === "Elder") c.elder++;
       if (p.appt === "MS") c.ms++;
       if (unbap) c.unbap++; else c.bap++;
+      var role = p.appt === "Elder" ? "Ancião" : p.appt === "MS" ? "Servo ministerial" : "";
+      var person = Object.assign({ detail: role }, base);
+      if (p.appt === "Elder") L.elder.push(person);
+      if (p.appt === "MS") L.ms.push(person);
+      L[unbap ? "unbap" : "bap"].push(person);
 
       var mine = live.filter(function (k) { return !!h.months[k]; });
       var at = function (k) { return h.months[k] && h.months[k].m; };
@@ -128,16 +142,17 @@
       else if (rule === "last3") { var last3 = live.slice(-3); ok = last3.length > 0 && last3.every(function (k) { return withSt.indexOf(k) >= 0; }); }
       else ok = withSt.length >= 3;
       if (ok) L.studies.push(Object.assign({ months: withSt, detail: "Estudos: " + withSt.map(function (k) { return label(k) + " (" + at(k).studies + ")"; }).join(", ") }, base));
+      else if (role && mine.length) L.apptNoStudies.push(Object.assign({ detail: role + " · Não atende ao critério de estudos selecionado" }, base));
 
       // Pioneiros regulares abaixo de 50 horas
-      var low = mine.filter(function (k) { return cardAt(k).status === "Regular Pioneer" && (at(k).hours || 0) < 50; });
+      var low = mine.filter(function (k) { return statusOf(cardAt(k)) === "Regular Pioneer" && (at(k).hours || 0) < 50; });
       if (low.length) L.rpLow.push(Object.assign({ months: low, detail: low.map(function (k) { var hr = at(k).hours; return label(k) + ": " + (hr == null ? "sem horas" : hr + " h"); }).join(", ") }, base));
     });
 
     Object.keys(L).forEach(function (k) { L[k].sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); }); });
     return {
       months: live,
-      counts: { elder: c.elder, ms: c.ms, bap: c.bap, unbap: c.unbap, newUnbap: c.newUnbap, aux: L.aux.length, newBap: L.newBap.length, irregular: L.irregular.length, apptAux: L.apptAux.length, studies: L.studies.length, rpLow: L.rpLow.length },
+      counts: { elder: c.elder, ms: c.ms, bap: c.bap, unbap: c.unbap, newUnbap: c.newUnbap, aux: L.aux.length, newBap: L.newBap.length, irregular: L.irregular.length, apptAux: L.apptAux.length, studies: L.studies.length, apptNoStudies: L.apptNoStudies.length, rpLow: L.rpLow.length },
       lists: L
     };
   }
@@ -222,7 +237,7 @@
     var last = upTo && upTo >= from ? (upTo > to ? to : upTo) : rep[rep.length - 1];
     var out = [];
     people(cards).forEach(function (h) {
-      var mine = all.filter(function (k) { return h.months[k] && h.months[k].p.status === "Regular Pioneer"; });
+      var mine = all.filter(function (k) { return h.months[k] && statusOf(h.months[k].p) === "Regular Pioneer"; });
       if (!mine.length) return;
       var at = function (k) { return h.months[k].m; };
       var start = prStart(h, mine);
@@ -403,25 +418,27 @@
   }
 
   var TILES = [
-    { key: "elder", label: "Anciãos" },
-    { key: "ms", label: "Servos ministeriais" },
-    { key: "bap", label: "Publicadores batizados", hint: "inclui anciãos, servos e pioneiros" },
-    { key: "unbap", label: "Publicadores não batizados" },
-    { key: "newUnbap", label: "Novos publicadores não batizados" },
+    { key: "elder", label: "Anciãos", list: true },
+    { key: "ms", label: "Servos ministeriais", list: true },
+    { key: "bap", label: "Publicadores batizados", hint: "inclui anciãos, servos e pioneiros", list: true },
+    { key: "unbap", label: "Publicadores não batizados", list: true },
+    { key: "newUnbap", label: "Novos publicadores não batizados", list: true },
     { key: "aux", label: "Pioneiros auxiliares diferentes", list: true },
     { key: "newBap", label: "Novos batizados", list: true },
     { key: "irregular", label: "Irregulares", list: true },
     { key: "apptAux", label: "Anciãos e servos como P.A.", list: true },
-    { key: "studies", label: "Dirigem estudos", list: true }
+    { key: "studies", label: "Dirigem estudos", list: true },
+    { key: "apptNoStudies", label: "Anciãos e servos sem estudos", list: true }
   ];
   /** Resumo próprio da área dos pioneiros regulares. */
   var RP_TILES = [
-    { key: "elderRp", label: "Anciãos – Pioneiros Regulares" },
-    { key: "msRp", label: "Servos ministeriais – Pioneiros Regulares" },
+    { key: "elderRp", label: "Anciãos – Pioneiros Regulares", list: true },
+    { key: "msRp", label: "Servos ministeriais – Pioneiros Regulares", list: true },
     { key: "studies", label: "Dirigem estudos", list: true },
     { key: "irregular", label: "Irregulares", list: true },
     { key: "below", label: "Abaixo da média", hint: "atrás da meta anual de 600 h", list: true },
-    { key: "short600", label: "Não completaram 600 h no ano anterior", list: true }
+    { key: "short600", label: "Não completaram 600 h no ano anterior", list: true },
+    { key: "apptNoStudies", label: "Anciãos e servos sem estudos", list: true }
   ];
   /** Análise da área "rp": analyze + pioneiros abaixo da meta do ano de serviço. */
   function analyzeRp(cards, opts, year) {
@@ -438,6 +455,7 @@
     below.sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); });
     r.lists.below = below;
     r.counts.elderRp = r.counts.elder; r.counts.msRp = r.counts.ms; r.counts.below = below.length;
+    r.lists.elderRp = r.lists.elder; r.lists.msRp = r.lists.ms;
     return r;
   }
   /** Possíveis pioneiros regulares: não marcados como PR, não inativos, com meses entre 35 h e 50 h (50 não entra). */
@@ -460,5 +478,6 @@
   ];
 
   var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, setToday: setToday, closedMonth: closedMonth, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap, prCandidates: prCandidates };
+  api.statusOf = statusOf; api.setStatus = setStatus; api.exportTiles = exportTiles;
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

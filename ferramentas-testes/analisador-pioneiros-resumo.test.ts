@@ -19,20 +19,20 @@ const S21 = g["S21"] as { fromFields: (f: Record<string, unknown>, file?: string
 function card(name: string, year: string, o: { appt?: string; m?: Record<number, Partial<Month>> } = {}): Card {
   const p = S21.fromFields({ "900_1_Text_SanSerif": name, "900_5_Text_SanSerif": "01/01/2010", "900_13_Text_C_SanSerif": year, "900_10_CheckBox": true }, "x.pdf");
   p.area = "rp"; if (o.appt) p.appt = o.appt;
-  Object.entries(o.m ?? {}).forEach(([i, v]) => Object.assign(p.months[Number(i)]!, v));
+  Object.entries(o.m ?? {}).forEach(([i, v]) => { const m = p.months[Number(i)]; if (m) Object.assign(m, v); });
   return p;
 }
 const full = (h: number) => { const m: Record<number, Partial<Month>> = {}; for (let i = 0; i < 12; i++) m[i] = { participated: true, hours: h }; return m; };
 
 describe("Analisador — resumo dos pioneiros regulares", () => {
-  it("só os 6 cards pedidos", () => {
-    expect(A.RP_TILES.map((t) => t.key)).toEqual(["elderRp", "msRp", "studies", "irregular", "below", "short600"]);
+  it("mantém os indicadores e inclui designados sem estudos", () => {
+    expect(A.RP_TILES.map((t) => t.key)).toEqual(["elderRp", "msRp", "studies", "irregular", "below", "short600", "apptNoStudies"]);
   });
   it("anciãos/servos pioneiros e abaixo da média", () => {
     const cards = [card("Ana Reg", "2025/2026", { appt: "Elder", m: full(40) }), card("Beto Reg", "2025/2026", { appt: "MS", m: full(60) })];
     const r = A.analyzeRp(cards, { from: "2025-09", to: "2026-08" }, 2026);
     expect([r.counts["elderRp"], r.counts["msRp"], r.counts["below"]]).toEqual([1, 1, 1]);
-    expect(r.lists["below"]!.map((x) => x.name)).toEqual(["Ana Reg"]);
+    expect(r.lists["below"]?.map((x) => x.name)).toEqual(["Ana Reg"]);
   });
   it("dois cartões da mesma pessoa contam como 1 pessoa", () => {
     expect(A.people([card("Ana Reg", "2025/2026"), card("Ana Reg", "2026/2027")]).length).toBe(1);

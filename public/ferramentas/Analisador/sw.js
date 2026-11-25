@@ -1,6 +1,6 @@
 // Analisador — modo sem internet próprio (escopo só /ferramentas/Analisador/).
 // Independente do public/sw.js do app VisitaSC. Página: rede primeiro; arquivos: cópia + atualização.
-const CACHE = "analisador-v6";
+const CACHE = "analisador-v7";
 const PAGE = "/ferramentas/Analisador/";
 const FILES = [
   PAGE,

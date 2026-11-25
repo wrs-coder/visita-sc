@@ -137,11 +137,11 @@
     var w = S.warnings(p).slice().concat(p.dateIssues || []);
     var inf = INFO[p.id]; if (inf && inf.inactive) w.push("Inativo — motivo: " + inf.reason); if (inf && inf.flagNote) w.push(inf.flagNote);
     else if (inf && inf.risk) w.push("Perigo de ficar inativo: " + inf.streak + " meses seguidos sem pregar");
-    if (p.area === "rp" && p.status !== "Regular Pioneer") w.push("Não está marcado como pioneiro regular");
-    if (p.area !== "rp" && p.status === "Regular Pioneer") w.push("Pioneiro regular: mova para “Pioneiros regulares”");
+    if (p.area === "rp" && A.statusOf(p) !== "Regular Pioneer" && !p.special) w.push("Não está marcado como pioneiro regular");
+    if (p.area !== "rp" && A.statusOf(p) === "Regular Pioneer") w.push("Pioneiro regular: mova para “Pioneiros regulares”");
     return w;
   }
-  var ST = { "Regular Pioneer": "Pioneiro regular", "Baptized Publisher": "Publicador batizado", "Unbaptized Publisher": "Publicador não batizado", "Continuous Auxiliary Pioneer": "Pioneiro auxiliar contínuo" };
+  var ST = { "Regular Pioneer": "Pioneiro regular", "Baptized Publisher": "Publicador batizado", "Unbaptized Publisher": "Publicador não batizado", "Continuous Auxiliary Pioneer": "Pioneiro auxiliar contínuo", "Special Pioneer": "Pioneiro especial", "FieldMissionary": "Missionário em campo" };
   function cardHtml(p) {
     var w = cardWarnings(p);
     var role = p.appt === "Elder" ? "Ancião" : p.appt === "MS" ? "Servo ministerial" : "";
@@ -155,7 +155,7 @@
     }).join("");
     var move = '<label class="full">Mover para' + sel("area", p.area, homeAreas().map(function (a) { return [a.id, a.name]; })) + "</label>";
     return '<details class="card" data-id="' + p.id + '"><summary><div><strong>' + esc(A.fullName(p)) + "</strong>" +
-      '<div class="sub">' + esc([A.cardYear(p) ? "Ano " + A.cardYear(p) : "Ano não lido", role, ST[p.status]].filter(Boolean).join(" · ")) + "</div></div>" +
+      '<div class="sub">' + esc([A.cardYear(p) ? "Ano " + A.cardYear(p) : "Ano não lido", role, ST[A.statusOf(p)]].filter(Boolean).join(" · ")) + "</div></div>" +
       '<span class="badge ' + (w.length ? "warn" : "ok") + '">' + (w.length ? "⚠ " + w.length : "✓") + '</span></summary><div class="body">' +
       (w.length ? '<ul class="warns">' + w.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : "") +
       (p.area === "rp" && p.status !== "Regular Pioneer" ? '<button class="soft markrp" data-markrp>Marcar como pioneiro regular</button>' : "") +
@@ -168,7 +168,7 @@
       '<label>Nascimento<input data-date="birth" inputmode="numeric" placeholder="dd/mm/aaaa" value="' + esc(A.dateBr(p.birth)) + '"></label>' +
       '<label>Batismo<input data-date="baptism" inputmode="numeric" placeholder="dd/mm/aaaa" value="' + esc(A.dateBr(p.baptism)) + '"></label>' +
       '<label class="full">Ano de serviço<input data-k="serviceYear" value="' + esc(p.serviceYear) + '" placeholder="Ex.: 2026/2027"></label>' +
-      '<label class="full">Situação' + sel("status", p.status, [["Baptized Publisher", "Publicador batizado"], ["Unbaptized Publisher", "Publicador não batizado"], ["Regular Pioneer", "Pioneiro regular"], ["Continuous Auxiliary Pioneer", "Pioneiro auxiliar contínuo"]]) + "</label>" +
+      '<label class="full">Situação' + sel("status", A.statusOf(p), Object.keys(ST).map(function (k) { return [k, ST[k]]; })) + "</label>" +
       '</div><table class="months"><thead><tr><th>Mês</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th>Obs.</th></tr></thead><tbody>' + rows + "</tbody></table>" +
       '<div class="pendbar"' + (pend[p.id] ? "" : " hidden") + '><span>● Há mudanças não aplicadas</span><button class="primary" data-apply>✓ Aplicar mudanças</button></div>' +
       '<div class="cardtools"><button class="soft" data-replace>⟳ Trocar por PDF novo</button><button class="rm" data-rm>Remover este cartão</button></div></div></details>';
@@ -368,7 +368,7 @@
   function showSheet() { if ($("sheet").open) return; if ($("sheet").showModal) $("sheet").showModal(); else $("sheet").setAttribute("open", ""); }
 
   // ---------- cartão da pessoa (só leitura) ----------
-  var ST_PT = { "Regular Pioneer": "Pioneiro regular", "Baptized Publisher": "Publicador batizado", "Unbaptized Publisher": "Publicador não batizado", "Continuous Auxiliary Pioneer": "Pioneiro auxiliar contínuo" };
+  var ST_PT = ST;
   function inactBox(id) {
     var i = INFO[id]; if (!i || !(i.auto || i.manual)) return "";
     return '<div class="risk"><strong>' + (i.manual ? "Marcado como não inativo" : "⚠ Inativo: " + esc(i.reason)) + '</strong><label class="chk"><input type="checkbox" data-notinactive="' + esc(i.key) + '" data-pid="' + esc(id) + '"' + (i.manual ? " checked" : "") + '> Não está inativo <small>(volta ao grupo de origem)</small></label></div>';
@@ -390,7 +390,7 @@
     var obs = c.months.filter(function (m) { return m.comments; }).map(function (m) { return "<li>" + esc((m.month ? A.label(m.month) + ": " : "") + m.comments) + "</li>"; }).join("");
     $("sheetTitle").textContent = h.name;
     $("sheetBody").innerHTML = (lastList ? '<button class="back" data-back>‹ Voltar</button>' : "") +
-      '<p class="pmeta">' + esc([areaName(c.area), role, ST_PT[c.status]].filter(Boolean).join(" · ")) + (h.baptism ? "<br>Batismo " + esc(dbr(h.baptism)) : "") + "</p>" + inactBox(id) +
+      '<p class="pmeta">' + esc([areaName(c.area), role, ST_PT[A.statusOf(c)]].filter(Boolean).join(" · ")) + (h.baptism ? "<br>Batismo " + esc(dbr(h.baptism)) : "") + "</p>" + inactBox(id) +
       (cards.length > 1 ? '<div class="pillrow">' + cards.map(function (q) { var y = A.cardYear(q); return '<button class="pill" data-pyear="' + y + '" data-pid="' + esc(id) + '" aria-pressed="' + (q === c) + '">Ano ' + (y || "?") + "</button>"; }).join("") + "</div>" : "") +
       '<table class="view"><thead><tr><th>Mês</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" +
       (obs ? '<p class="pmeta">Observações</p><ul class="warns">' + obs + "</ul>" : "") +
@@ -571,7 +571,7 @@
       if (el.closest("[data-apply]")) { applyNow(el.closest(".card")); return; }
       var prb = el.closest("[data-pr]"); if (prb) { prDecide(prb.closest("[data-prkey]").dataset.prkey, prb.dataset.pr); return; }
       if (el.closest("[data-markrp]")) { var mc = state.cards.filter(function (x) { return x.id === el.closest(".card").dataset.id; })[0]; if (mc) { mc.status = "Regular Pioneer"; recalc(); touch(); render(); } return; }
-      if (el.closest("[data-markall]")) { state.cards.forEach(function (x) { if (x.area === "rp") x.status = "Regular Pioneer"; }); recalc(); touch(); render(); return; }
+      if (el.closest("[data-markall]")) { state.cards.forEach(function (x) { if (x.area === "rp" && !x.special) x.status = "Regular Pioneer"; }); recalc(); touch(); render(); return; }
       if (el.closest("[data-add]")) { addTo = id; $("pdfs").click(); return; }
       if (el.closest("[data-finish]")) { state.done[id] = today(); touch(); render(); return; }
       if (el.closest("[data-reopen]")) { delete state.done[id]; touch(); render(); return; }
@@ -610,7 +610,7 @@
       else p.dateIssues.push(lbl + " não entendido: “" + el.value.trim() + "”. Corrija como dd/mm/aaaa.");
       render(); return;
     }
-    if (el.dataset.k) { p[el.dataset.k] = el.value; render(); return; }
+    if (el.dataset.k) { if (el.dataset.k === "status") A.setStatus(p, el.value); else p[el.dataset.k] = el.value; render(); return; }
     if (el.dataset.mk) {
       var m = p.months[Number(el.closest("tr").dataset.m)], k = el.dataset.mk;
       if (el.type === "checkbox") m[k] = el.checked;
@@ -701,7 +701,7 @@
   // ---------- relatório PDF (pdf-lib) ----------
   var PDF_PARTS = [
     ["sumAll", "Resumo geral", true], ["sumGroups", "Resumo por grupo", true], ["totals", "Totais mensais", true],
-    ["goals", "Meta dos pioneiros regulares", true], ["inactive", "Inativos e em perigo", true], ["lists", "Listas com nomes", false],
+    ["goals", "Meta dos pioneiros regulares", true], ["inactive", "Inativos e em perigo", true], ["apptNoStudies", "Incluir card Anciãos e servos sem estudos", true], ["lists", "Listas com nomes", false],
     ["notes", "Anotações", true], ["legend", "Legenda (o que significa cada item)", true]
   ];
   function pdfPrefs() {
@@ -760,12 +760,13 @@
       var results = {}; scopes.forEach(function (s) { results[s.id] = s.id === "all" ? general : analysis(s.id); });
       for (var i = 0; i < scopes.length; i += 5) {
         var cols = scopes.slice(i, i + 5), labW = 190, colW = (W - 2 * M - labW) / cols.length;
-        need(24 + A.TILES.length * 16);
+        var summaryTiles = A.exportTiles(A.TILES, opt);
+        need(24 + summaryTiles.length * 16);
         page.drawRectangle({ x: M, y: y - 20, width: W - 2 * M, height: 20, color: accent });
         cols.forEach(function (s, j) { page.drawText(fit(s.name, bold, 8.5, colW - 6), { x: M + labW + j * colW + 4, y: y - 14, size: 8.5, font: bold, color: white }); });
         page.drawText("Indicador", { x: M + 6, y: y - 14, size: 8.5, font: bold, color: white });
         y -= 22;
-        A.TILES.forEach(function (t, n) {
+        summaryTiles.forEach(function (t, n) {
           band(n, 16);
           page.drawText(fit(t.label, font, 9.5, labW - 10), { x: M + 6, y: y - 9.5, size: 9.5, font: font, color: ink });
           cols.forEach(function (s, j) { page.drawText(String(results[s.id].counts[t.key]), { x: M + labW + j * colW + 4, y: y - 9.5, size: 9.5, font: bold, color: ink }); });
@@ -830,7 +831,7 @@
 
     if (opt.lists) {
       heading("Listas (toda a congregação)");
-      A.TILES.filter(function (t) { return t.list; }).forEach(function (t) {
+      A.exportTiles(A.TILES, opt).filter(function (t) { return t.list; }).forEach(function (t) {
         var items = general.lists[t.key];
         need(30); text(t.label + " (" + items.length + ")", { size: 11, bold: true, gap: 3 });
         if (!items.length) text("Ninguém neste período.", { indent: 10, color: grey, gap: 8 });
@@ -887,7 +888,7 @@
 
   // ---------- PDF por grupo / pioneiros (uma página por área, sem nome da ferramenta) ----------
   function totalsSecs(id) { return A.TOTAL_SECTIONS.filter(function (s) { return id === "rp" ? s.key === "rp" : s.key !== "rp"; }); }
-  async function buildAreaPdf(ids, withNotes) {
+  async function buildAreaPdf(ids, withNotes, withNoStudies) {
     var doc = await PDFLib.PDFDocument.create();
     var font = await doc.embedFont(PDFLib.StandardFonts.Helvetica), bold = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
     var W = 595.28, H = 841.89, M = 40, page, y, cur = "";
@@ -911,7 +912,7 @@
     function sec(t, title) { need(30, title); page.drawText(pdfSafe(t.toUpperCase()), { x: M, y: y - 11, size: 10, font: bold, color: accent }); y -= 20; }
     ids.forEach(function (id) {
       var title = areaName(id); cur = title; header(title);
-      var r = analysis(id), tiles = id === "rp" ? A.RP_TILES : A.TILES;
+      var r = analysis(id), tiles = A.exportTiles(id === "rp" ? A.RP_TILES : A.TILES, { apptNoStudies: withNoStudies });
       sec("Resumo", title);
       var cols = 4, gap = 8, tw = (W - 2 * M - gap * (cols - 1)) / cols, th = 50;
       tiles.forEach(function (t, i) {
@@ -973,6 +974,7 @@
       body = '<p class="muted small">Resumo e totais mensais ' + (id === "rp" ? "dos pioneiros regulares." : "deste grupo.") + '</p><input type="hidden" data-apdf="' + esc(id) + '">';
     }
     $("sheetBody").innerHTML = body + '<label class="chk"><input type="checkbox" data-apnotes checked> Incluir anotações</label>' +
+      '<label class="chk"><input type="checkbox" data-apnostudies' + (pdfPrefs().apptNoStudies ? " checked" : "") + '> Incluir card Anciãos e servos sem estudos</label>' +
       '<div class="sheetbtns"><button class="ghost" data-pdfcancel>Cancelar</button><button class="primary" data-apgo>⬇ Gerar PDF</button></div>';
     showSheet();
   }
@@ -1010,8 +1012,11 @@
     var ids = []; $("sheetBody").querySelectorAll("[data-apdf]").forEach(function (c) { if (c.type === "hidden" || c.checked) ids.push(c.dataset.apdf); });
     if (!ids.length) { say("Marque pelo menos um grupo."); return; }
     var notes = $("sheetBody").querySelector("[data-apnotes]").checked;
+    var noStudies = $("sheetBody").querySelector("[data-apnostudies]").checked;
+    var prefs = pdfPrefs(); prefs.apptNoStudies = noStudies;
+    try { localStorage.setItem("analisador.pdfParts", JSON.stringify(prefs)); } catch (err) { console.warn("[Analisador] Preferências de PDF não salvas:", err); }
     go.disabled = true;
-    try { download(new Blob([await buildAreaPdf(ids, notes)], { type: "application/pdf" }), "resumo-" + slug(ids.length === 1 ? areaName(ids[0]) : "grupos") + "-" + slug(state.congregation) + "-" + today() + ".pdf"); $("sheet").close(); }
+    try { download(new Blob([await buildAreaPdf(ids, notes, noStudies)], { type: "application/pdf" }), "resumo-" + slug(ids.length === 1 ? areaName(ids[0]) : "grupos") + "-" + slug(state.congregation) + "-" + today() + ".pdf"); $("sheet").close(); }
     catch (err) { say("Não foi possível gerar o PDF. Tente de novo."); }
     finally { go.disabled = false; }
   });
