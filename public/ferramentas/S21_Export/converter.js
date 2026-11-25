@@ -331,6 +331,13 @@
     };
 
     // Números internos estáveis e sempre abaixo de 2.147.483.647 (inteiro comum), como no modelo.
+    // Grupos de campo opcionais (Analisador): opts.groupOf(cartão) → nome do grupo ou "".
+    var fsGroups = [], gIds = {};
+    function groupId(p) {
+      var n = opts.groupOf ? str(opts.groupOf(p)) : ""; if (!n) return null;
+      if (!gIds[n]) { gIds[n] = (congId % 100000) * 100 + fsGroups.length + 1; fsGroups.push({ id: gIds[n], overseer_id: null, assistant_id: null, notes: null, name: n, overseer: null, assistant: null, members: null }); }
+      return gIds[n];
+    }
     var publishers = [], reports = [], pubBase = (congId % 2000000) * 1000, repBase = (congId % 100000) * 20000;
     groupPeople(list).forEach(function (g, idx) {
       var p = g.main, id = pubBase + idx + 1;
@@ -339,7 +346,7 @@
         firstname: nz(p.firstname), lastname: nz(p.lastname), middlename: nz(p.middlename),
         sex: nz(p.sex), birth: nz(p.birth), baptism: nz(p.baptism), pioneerid: null, appt: nz(p.appt),
         email: null, cellphone: null, homephone: null, otherphone: null, address_id: null, comments: null,
-        congregations_id: congId, smpw_root_zone_id: null, group_id: null, family_id: null, language_group_id: null,
+        congregations_id: congId, smpw_root_zone_id: null, group_id: groupId(p), family_id: null, language_group_id: null,
         firstmonth: null, status: hgStatus(p, true), suffix: nz(p.suffix), descriptor: null,
         loginemail: null, lastlogin: null, lastmobiletoken: null, emailbounce: false, locales_id: null,
         revoked: false, anointed: false, familycontact: false, rpquota: null, advdirective: false,
@@ -395,7 +402,7 @@
     PRIVILEGES.forEach(function (k) { privileges[k] = []; });
 
     return {
-      congregation: congregation, publishers: publishers, addresses: [], fsGroups: [],
+      congregation: congregation, publishers: publishers, addresses: [], fsGroups: fsGroups,
       attendance: { attendance: attendance, attendanceGroups: [{ id: 0, name: "" }] },
       reports: reports, notPublishers: null, monthlyTotals: monthlyTotals, privileges: privileges,
       territories: [], territoryRecords: []

@@ -4,6 +4,11 @@
   var NEW_PUB = /novo\s+publicador|in[ií]cio\s+como\s+publicador|iniciou\s+como\s+publicador|come[cç]ou\s+a\s+pregar/i;
 
   function S() { return root.S21; }
+  // Hoje do aparelho (testes podem fixar com setToday). O mês atual nunca é avaliado: relatórios ainda não entregues.
+  var TODAY = null;
+  function setToday(d) { TODAY = d ? new Date(d) : null; }
+  function closedMonth() { var d = TODAY || new Date(), y = d.getFullYear(), m = d.getMonth(); if (m === 0) { y--; m = 12; } return y + "-" + String(m).padStart(2, "0"); }
+  function capMonth(k) { var c = closedMonth(); return !k || k > c ? c : k; }
   function ym(y, m) { return y + "-" + String(m).padStart(2, "0"); }
   function addMonths(k, n) { var t = +k.slice(0, 4) * 12 + (+k.slice(5, 7) - 1) + n; return ym(Math.floor(t / 12), (t % 12) + 1); }
   function monthsBetween(from, to) { var out = []; if (!from || !to || from > to) return out; for (var k = from; k <= to; k = addMonths(k, 1)) out.push(k); return out; }
@@ -16,7 +21,8 @@
   /** Meses em que algum cartão tem relatório (meses depois disso ainda não aconteceram). */
   function reportedMonths(cards) {
     var set = {};
-    cards.forEach(function (p) { p.months.forEach(function (m) { if (m.month && hasData(m)) set[m.month] = true; }); });
+    var c = closedMonth();
+    cards.forEach(function (p) { p.months.forEach(function (m) { if (m.month && m.month <= c && hasData(m)) set[m.month] = true; }); });
     return Object.keys(set).sort();
   }
 
@@ -44,7 +50,10 @@
   /** Últimos n meses com relatório na congregação (pode atravessar dois anos de serviço). */
   function lastMonths(cards, n) {
     var r = reportedMonths(cards); if (!r.length) return { from: "", to: "" };
-    var to = r[r.length - 1]; return { from: addMonths(to, -(n - 1)), to: to };
+    // Os n meses antes do mês atual do aparelho; dados antigos (sem relatório nessa janela) usam o último mês com relatório.
+    var to = closedMonth();
+    if (!r.some(function (k) { return k > addMonths(to, -n) && k <= to; })) to = r[r.length - 1];
+    return { from: addMonths(to, -(n - 1)), to: to };
   }
   /** Anos de serviço tocados por um período. */
   function periodYears(from, to) { var s = {}; monthsBetween(from, to).forEach(function (k) { s[yearOfMonth(k)] = true; }); return Object.keys(s).map(Number).sort(); }
@@ -217,12 +226,15 @@
       var done = elapsed.reduce(function (s, k) { return s + ((h.months[k] && at(k).hours) || 0); }, 0);
       var low = elapsed.filter(function (k) { return h.months[k] && h.months[k].p.status === "Regular Pioneer" && (at(k).hours || 0) < 50; })
         .map(function (k) { return { month: k, hours: at(k).hours == null ? null : at(k).hours, comments: String(at(k).comments || "").trim() }; });
+      var fullYear = all.every(function (k) { return rep.indexOf(k) >= 0; });
+      var shortYear = fullYear && start === from && done < 600;
       var goalYear = 50 * span.length, goalNow = 50 * elapsed.length, left = span.length - elapsed.length;
       out.push({
         id: h.main.id, name: h.name, area: h.area, start: start, late: start > from,
         months: elapsed.length, done: done, goalYear: goalYear, goalNow: goalNow, diff: done - goalNow,
         avg: elapsed.length ? Math.round(done / elapsed.length * 10) / 10 : 0,
-        need: left > 0 ? Math.max(0, Math.ceil((goalYear - done) / left)) : 0, left: left, low: low
+        need: left > 0 ? Math.max(0, Math.ceil((goalYear - done) / left)) : 0, left: left, low: low,
+        fullYear: fullYear, shortYear: shortYear, missing: shortYear ? Math.round((600 - done) * 10) / 10 : 0
       });
     });
     out.sort(function (a, b) { return a.diff - b.diff || a.name.localeCompare(b.name, "pt"); });
@@ -366,7 +378,7 @@
    * Retorna { idDoCartão: { inactive, risk, streak, reason, flagNote, manual, key } }.
    */
   function inactiveMap(cards, upTo, overrides) {
-    var rep = reportedMonths(cards), last = upTo || rep[rep.length - 1], out = {}, ov = overrides || {};
+    var rep = reportedMonths(cards), last = capMonth(upTo || rep[rep.length - 1]), out = {}, ov = overrides || {};
     people(cards).forEach(function (h) {
       var key = normName(h.name);
       var flag = h.cards.some(function (p) { return INATIVO.test(cardText(p)); });
@@ -429,6 +441,6 @@
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap, prCandidates: prCandidates };
+  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, setToday: setToday, closedMonth: closedMonth, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap, prCandidates: prCandidates };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

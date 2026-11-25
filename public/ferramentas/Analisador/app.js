@@ -304,7 +304,8 @@
       return '<button class="item tap goal" data-person="' + esc(x.id) + '"><div class="gtop"><strong>' + esc(x.name) + (x.late ? ' <small>(iniciou em ' + esc(A.label(x.start)) + ")</small>" : "") + '</strong><span class="badge ' + cls + '">' + sign + "</span></div>" +
         "<p>Feitas " + hrs(x.done) + " · Meta até agora " + hrs(x.goalNow) + (x.late ? " · Meta do ano " + hrs(x.goalYear) + " (" + (x.goalYear / 50) + " meses × 50)" : "") + "</p>" +
         "<p>Média " + hrs(x.avg) + "/mês" + (x.left ? " · precisa " + hrs(x.need) + "/mês até agosto" : "") + "</p>" +
-        (x.low && x.low.length ? '<div class="lowm"><small>Abaixo de 50 h:</small>' + x.low.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? " · “" + esc(l.comments) + "”" : "") + "</p>"; }).join("") + "</div>" : "") + "</button>";
+        (x.shortYear ? '<div class="lowm"><p><b>⚠ (Ano anterior faltou: ' + hrs(x.missing) + ")</b></p></div>" : "") +
+        (x.low && x.low.length ? '<div class="lowm"><small>' + (x.shortYear ? "Meses abaixo de 50 h:" : "Abaixo de 50 h:") + '</small>' + x.low.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? " · “" + esc(l.comments) + "”" : "") + "</p>"; }).join("") + "</div>" : "") + "</button>";
     }).join("");
   }
   function renderGoals() {
@@ -316,7 +317,8 @@
     box.hidden = false;
     $("rpHead").textContent = "Ano de serviço " + y + " (set/" + (y - 1) + " a ago/" + y + ")" + (r.upTo ? " · até " + A.label(r.upTo) + ": meta " + hrs(50 * A.monthsBetween((y - 1) + "-09", r.upTo).length) : "");
     var low = r.list.filter(function (x) { return x.diff < 0; }).length;
-    $("rpLow").textContent = low ? low + " ⚠" : "";
+    var short = r.list.filter(function (x) { return x.shortYear; }).length;
+    $("rpLow").textContent = (low ? low + " ⚠" : "") + (short ? (low ? " · " : "") + "⚠ " + short + " não completaram as 600 h" : "");
     $("rpList").innerHTML = r.list.length ? rpRows(r) : '<p class="muted">Nenhum pioneiro regular com cartão deste ano.</p>';
   }
 
@@ -805,6 +807,7 @@
       goals.list.forEach(function (x) {
         need(40);
         text(x.name + (x.late ? " (iniciou em " + A.label(x.start) + ")" : "") + ": " + (x.diff < 0 ? "atrasado " + hrs(-x.diff) : "em dia +" + hrs(x.diff)), { bold: true, gap: 1, color: x.diff < 0 ? red : ink });
+        if (x.shortYear) text("(Ano anterior faltou: " + hrs(x.missing) + ")", { indent: 10, color: red, gap: 2 });
         text("Feitas " + hrs(x.done) + " - meta até agora " + hrs(x.goalNow) + " - meta do ano " + hrs(x.goalYear) + " - média " + hrs(x.avg) + "/mês" + (x.left ? " - precisa " + hrs(x.need) + "/mês" : ""), { indent: 10, color: grey, gap: 2 });
         (x.low || []).forEach(function (l) { text("Abaixo de 50 h em " + A.label(l.month) + ": " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? ' - "' + l.comments + '"' : ""), { indent: 20, size: 9, color: grey, gap: 2 }); });
         y -= 6;
@@ -849,7 +852,7 @@
        ["Inativo", "6 meses seguidos ou mais sem pregar até o último mês do período analisado."],
        ["Em perigo", "4 ou 5 meses seguidos sem pregar."],
        ["Pioneiros auxiliares diferentes", "cada pessoa conta uma vez, mesmo servindo em vários meses."],
-       ["Meta anual", "600 horas no ano de serviço (setembro a agosto) = 50 h por mês. Quem começou no meio do ano tem meta de 50 h por mês restante."],
+       ["Meta anual", "600 horas no ano de serviço (setembro a agosto) = 50 h por mês. Quem começou no meio do ano tem meta de 50 h por mês restante. Ano completo (12 meses com relatório) e pioneiro desde setembro com menos de 600 h: aviso “(Ano anterior faltou: X h)” com os meses abaixo de 50 h."],
        ["Dirigem estudos", rl ? rl.label + "." : ""]].forEach(function (l) { text(l[0] + ": " + l[1], { gap: 4 }); });
     }
 
@@ -973,6 +976,33 @@
       '<div class="sheetbtns"><button class="ghost" data-pdfcancel>Cancelar</button><button class="primary" data-apgo>⬇ Gerar PDF</button></div>';
     showSheet();
   }
+  // ---------- arquivo para o Circuit Manager (mesmo formato do Conversor S-21 + grupos de campo) ----------
+  var CONG_KEY = "s21.cong";
+  function openCircuit() {
+    if (!state.cards.length) { say("Adicione cartões antes de gerar o arquivo."); return; }
+    lastList = null;
+    var c = {}; try { c = JSON.parse(localStorage.getItem(CONG_KEY) || "{}"); } catch (e) {}
+    if (!c.name && state.congregation) c.name = state.congregation;
+    var opts = Object.keys(S.COUNTRIES).map(function (k) { return '<option value="' + k + '"' + (k === (c.country || "BR") ? " selected" : "") + ">" + esc(S.COUNTRIES[k].label) + "</option>"; }).join("");
+    var people = S.groupPeople(state.cards).length;
+    $("sheetTitle").textContent = "Arquivo Circuit Manager";
+    $("sheetBody").innerHTML = '<p class="muted small">' + people + " publicadores, com o grupo de campo de cada um. E-mail, telefones, assistência e privilégios ficam em branco.</p>" +
+      '<label class="full">Congregação<input data-cm="name" value="' + esc(c.name || "") + '"></label>' +
+      '<label class="full">Número<input data-cm="number" inputmode="numeric" value="' + esc(c.number || "") + '"></label>' +
+      '<label class="full">País<select data-cm="country">' + opts + "</select></label>" +
+      '<div class="sheetbtns"><button class="ghost" data-pdfcancel>Cancelar</button><button class="primary" data-cmgo>⬇ Baixar</button></div>';
+    showSheet();
+  }
+  $("circuitJson").addEventListener("click", openCircuit);
+  $("sheetBody").addEventListener("click", function (e) {
+    if (!e.target.closest("[data-cmgo]")) return;
+    var v = function (k) { return $("sheetBody").querySelector('[data-cm="' + k + '"]').value; };
+    var c = { name: v("name").trim(), number: v("number").replace(/\D/g, ""), country: v("country") };
+    try { localStorage.setItem(CONG_KEY, JSON.stringify(c)); } catch (err) {}
+    var groupOf = function (p) { return p.area && p.area !== "rp" && p.area !== "in" ? areaName(p.area) : ""; };
+    download(JSON.stringify(S.toCircuit(state.cards, { name: c.name, number: c.number, country: c.country, today: new Date(), groupOf: groupOf })), "hourglass-export.json", "application/json;charset=utf-8");
+    $("sheet").close(); say("Arquivo do Circuit Manager gerado.");
+  });
   $("areaPdf").addEventListener("click", function () { openAreaPdf(state.active); });
   $("groupsPdf").addEventListener("click", function () { openAreaPdf("all"); });
   $("sheetBody").addEventListener("click", async function (e) {
