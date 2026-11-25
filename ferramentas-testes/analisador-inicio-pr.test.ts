@@ -10,7 +10,7 @@ const g = globalThis as Record<string, unknown>;
 const conv = req("../public/ferramentas/S21_Export/converter.js") as Record<string, unknown>;
 if (conv && "groupPeople" in conv) g["S21"] = conv;
 const an = req("../public/ferramentas/Analisador/analyzer.js") as Record<string, unknown>;
-const A = (an && "analyze" in an ? an : g["Analisador"]) as { setToday: (d: Date | null) => void; pioneerYear: (c: Card[], y: number) => { list: Goal[] } };
+const A = (an && "analyze" in an ? an : g["Analisador"]) as { setToday: (d: Date | null) => void; pioneerYear: (c: Card[], y: number) => { list: Goal[] }; analyzeRp: (c: Card[], o: { from: string; to: string }, y: number) => { counts: Record<string, number>; lists: Record<string, { name: string; detail: string }[]> } };
 const S21 = g["S21"] as { fromFields: (f: Record<string, unknown>, file?: string) => Card };
 
 let n = 0;
@@ -50,5 +50,13 @@ describe("início do pioneiro regular", () => {
     const x = A.pioneerYear([old, cur], 2027).list[0]!;
     expect(x.prevMissing).toBe(10);
     expect(x.prevLow).toEqual([expect.objectContaining({ month: "2025-10", hours: 40 })]);
+  });
+  it("Regina: 573 h em 2026 → novo cartão do Resumo no ano 2027 com 6 meses", () => {
+    today();
+    const old = card("Regina Ventura", "2025/2026", [64, 39, 25, 39, 61, 39, 38, 61, 43, 64, 41, 59]);
+    const cur = card("Regina Ventura", "2026/2027", [61, 36]);
+    const r = A.analyzeRp([old, cur], { from: "2026-05", to: "2026-10" }, 2027);
+    expect(r.counts["short600"]).toBe(1);
+    expect(r.lists["short600"]![0]!.detail).toBe("Faltou 27 h");
   });
 });

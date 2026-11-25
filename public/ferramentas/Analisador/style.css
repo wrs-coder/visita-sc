@@ -118,3 +118,4 @@ table.view tr.out td{opacity:.5}
 .prcand .practs{display:flex;flex-wrap:wrap;gap:6px}
 .pendbar.okbar span{font-weight:600}
 .sechead .secbtn{flex:0 0 auto;min-height:36px;padding:6px 14px;border-radius:999px;font-size:13px}
+.shortd>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;color:var(--warn);min-height:32px;align-items:center}.shortd>summary::-webkit-details-marker{display:none}.shortd>summary::after{content:"›";color:var(--accent);font-weight:600}.shortd[open]>summary::after{content:"⌄"}

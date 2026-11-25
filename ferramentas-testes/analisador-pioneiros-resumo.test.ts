@@ -25,8 +25,8 @@ function card(name: string, year: string, o: { appt?: string; m?: Record<number,
 const full = (h: number) => { const m: Record<number, Partial<Month>> = {}; for (let i = 0; i < 12; i++) m[i] = { participated: true, hours: h }; return m; };
 
 describe("Analisador — resumo dos pioneiros regulares", () => {
-  it("só os 5 cards pedidos", () => {
-    expect(A.RP_TILES.map((t) => t.key)).toEqual(["elderRp", "msRp", "studies", "irregular", "below"]);
+  it("só os 6 cards pedidos", () => {
+    expect(A.RP_TILES.map((t) => t.key)).toEqual(["elderRp", "msRp", "studies", "irregular", "below", "short600"]);
   });
   it("anciãos/servos pioneiros e abaixo da média", () => {
     const cards = [card("Ana Reg", "2025/2026", { appt: "Elder", m: full(40) }), card("Beto Reg", "2025/2026", { appt: "MS", m: full(60) })];

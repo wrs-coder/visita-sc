@@ -420,12 +420,19 @@
     { key: "msRp", label: "Servos ministeriais – Pioneiros Regulares" },
     { key: "studies", label: "Dirigem estudos", list: true },
     { key: "irregular", label: "Irregulares", list: true },
-    { key: "below", label: "Abaixo da média", hint: "atrás da meta anual de 600 h", list: true }
+    { key: "below", label: "Abaixo da média", hint: "atrás da meta anual de 600 h", list: true },
+    { key: "short600", label: "Não completaram 600 h no ano anterior", list: true }
   ];
   /** Análise da área "rp": analyze + pioneiros abaixo da meta do ano de serviço. */
   function analyzeRp(cards, opts, year) {
     var r = analyze(cards, Object.assign({}, opts, { area: "rp" }));
-    var below = year ? pioneerYear(cards, year).list.filter(function (x) { return x.area === "rp" && x.diff < 0; }).map(function (x) {
+    var goals = year ? pioneerYear(cards, year).list : [];
+    var short600 = goals.filter(function (x) { return x.area === "rp" && (x.shortYear || x.prevMissing); }).map(function (x) {
+      return { id: x.id, name: x.name, area: x.area, detail: "Faltou " + String(x.shortYear ? x.missing : x.prevMissing).replace(".", ",") + " h" };
+    });
+    short600.sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); });
+    r.lists.short600 = short600; r.counts.short600 = short600.length;
+    var below = year ? goals.filter(function (x) { return x.area === "rp" && x.diff < 0; }).map(function (x) {
       return { id: x.id, name: x.name, area: x.area, detail: "Faltam " + (Math.round(-x.diff * 10) / 10) + " h · média " + x.avg + " h/mês" };
     }) : [];
     below.sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); });

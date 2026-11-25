@@ -301,12 +301,11 @@
   function rpRows(r) {
     return r.list.map(function (x) {
       var cls = x.diff < 0 ? "warn" : "ok", sign = x.diff < 0 ? "⚠ −" + hrs(-x.diff) : "✓ +" + hrs(x.diff);
-      return '<button class="item tap goal" data-person="' + esc(x.id) + '"><div class="gtop"><strong>' + esc(x.name) + (x.late ? ' <small>(iniciou em ' + esc(A.label(x.start)) + ")</small>" : "") + '</strong><span class="badge ' + cls + '">' + sign + "</span></div>" +
+      return '<div class="item tap goal" role="button" tabindex="0" data-person="' + esc(x.id) + '"><div class="gtop"><strong>' + esc(x.name) + (x.late ? ' <small>(iniciou em ' + esc(A.label(x.start)) + ")</small>" : "") + '</strong><span class="badge ' + cls + '">' + sign + "</span></div>" +
         "<p>Feitas " + hrs(x.done) + " · Meta até agora " + hrs(x.goalNow) + (x.late ? " · Meta do ano " + hrs(x.goalYear) + " (" + (x.goalYear / 50) + " meses × 50)" : "") + "</p>" +
         "<p>Média " + hrs(x.avg) + "/mês" + (x.left ? " · precisa " + hrs(x.need) + "/mês até agosto" : "") + "</p>" +
-        (x.shortYear ? '<div class="lowm"><p><b>⚠ (Ano anterior faltou: ' + hrs(x.missing) + ")</b></p></div>" : "") +
-        (!x.shortYear && x.prevMissing ? '<div class="lowm"><p><b>⚠ (Ano anterior faltou: ' + hrs(x.prevMissing) + ")</b></p><small>Meses do ano anterior abaixo de 50 h:</small>" + x.prevLow.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + "</p>"; }).join("") + "</div>" : "") +
-        (x.low && x.low.length ? '<div class="lowm"><small>' + (x.shortYear ? "Meses abaixo de 50 h:" : "Abaixo de 50 h:") + '</small>' + x.low.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? " · “" + esc(l.comments) + "”" : "") + "</p>"; }).join("") + "</div>" : "") + "</button>";
+        ((x.shortYear || x.prevMissing) ? '<details class="lowm shortd" onclick="event.stopPropagation()"><summary><b>⚠ (Ano anterior faltou: ' + hrs(x.shortYear ? x.missing : x.prevMissing) + ")</b></summary>" + (x.shortYear ? x.low : x.prevLow).map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + "</p>"; }).join("") + "</details>" : "") +
+        (x.low && x.low.length && !x.shortYear ? '<div class="lowm"><small>Abaixo de 50 h:</small>' + x.low.map(function (l) { return "<p><b>" + esc(A.label(l.month)) + "</b> " + (l.hours == null ? "sem horas" : hrs(l.hours)) + (l.comments ? " · “" + esc(l.comments) + "”" : "") + "</p>"; }).join("") + "</div>" : "") + "</div>";
     }).join("");
   }
   function renderGoals() {
