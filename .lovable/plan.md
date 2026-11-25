@@ -53,17 +53,20 @@ Em "Meta anual · 600 h", quando o ano de serviço tiver os **12 meses (set–ag
 ┌───────────────────────────────┐
 │ Maria Souza          540 h    │
 │ ⚠ (Ano anterior faltou: 60 h) │
+│   Meses abaixo de 50 h:       │
+│   Out/25 42 h · Jan/26 38 h   │
+│   Abr/26 45 h                 │
 │ Média 45 h/mês                │
 └───────────────────────────────┘
 ```
 
-Também aparece um contador no topo da meta ("⚠ 2 não completaram as 600 h") e uma linha no PDF dos pioneiros. Quem começou no meio do ano continua com a meta proporcional e **não** recebe esse alerta. Ano ainda em andamento: sem alerta.
+Abaixo da frase, a lista dos **meses do ano anterior com menos de 50 h e as horas de cada um** (mês sem relatório aparece como "sem relatório"). Também aparece um contador no topo da meta ("⚠ 2 não completaram as 600 h") e uma linha no PDF dos pioneiros. Quem começou no meio do ano continua com a meta proporcional e **não** recebe esse alerta. Ano ainda em andamento: sem alerta.
 
 Testes novos: ano completo com 540 h → alerta; 600 h → sem alerta; começou em janeiro → sem alerta; ano incompleto → sem alerta.
 
 ## Detalhes técnicos
 
 - Nova função `lastClosedMonth(hoje)` = mês anterior ao do aparelho; `inactiveMap`, irregulares e `lastMonths` usam `min(fimDoPeríodo, lastClosedMonth)`; testes injetam a data.
-- `analyzer.js` `pioneerYear`: novos campos `fullYear` (todos os 12 meses do ano em reportedMonths), `wholeYear` (`start === from`), `shortYear = fullYear && wholeYear && done < 600`, `missing = 600 - done`.
+- `analyzer.js` `pioneerYear`: novos campos `fullYear` (todos os 12 meses do ano em reportedMonths), `wholeYear` (`start === from`), `shortYear = fullYear && wholeYear && done < 600`, `missing = 600 - done`; reaproveita a lista `low` (meses < 50 h) do ano completo para exibir mês e horas.
 - Exportação: reutilizar `S21.toCircuit` (já carregado/disponível) com parâmetro opcional `groups` para preencher `group_id` e `fsGroups`; sem parâmetro, o Conversor S-21 gera exatamente o mesmo de hoje.
 - Atualizar Ajuda da ferramenta e `instructions-ferramentas.md` conforme a regra; rodar todos os testes de `ferramentas-testes/` incluindo `isolamento.test.ts`.
