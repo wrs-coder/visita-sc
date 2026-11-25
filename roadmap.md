@@ -76,6 +76,6 @@
 - [x] (01) Balão bíblico: palavras juntas em Provérbios
 - [x] (02) Companhia (Ministério) com modalidade + Outro
 - [x] (03) Campo: modalidade Outro
-- [ ] (04) Programa da visita: já editável por visita; aguardando o usuário dizer o que falta
+- [ ] (04) Pastoreio: permitir ao SC editar os dias e horários pré-selecionados só nesta visita; aguardando aprovação do esboço
 - [x] Sugestão: lembrar textos de "Outro"
 - [x] Sugestão: selo "editado nesta visita" (já existia nas informações do modelo)

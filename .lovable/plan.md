@@ -54,26 +54,47 @@ Plano:
 
 ## (04) Programa da visita — modo edição completo do SC
 
+**Pendência confirmada:** no Pastoreio, o SC só consegue escolher combinações de dia e horário já definidas no modelo. Falta editar livremente o dia e a hora de um pastoreio desta visita. Os pontos (01), (02), (03) e as sugestões anteriores já foram entregues; esta etapa trata somente dessa pendência.
+
 ```text
-┌─────────────────────────────┐
-│ Programa da visita  [✎ Editando]
-│ (Anciãos)(Companhia)(Reuniões)(Refeições)(Transporte)
-│ Qua 12/11                   │
-│ ┌─────────────────────────┐ │
-│ │ 08:30 Campo · Casa em casa│
-│ │ Modalidade ▾  Horário ⏱ │ │
-│ │ Observações [_________] │ │
-│ │                 🗑 Excluir│ │
-│ └─────────────────────────┘ │
-│ [＋ Adicionar horário]       │
-│ ⓘ Muda só esta congregação. │
-│   Os modelos não mudam.     │
-└─────────────────────────────┘
+┌──────────────────────────────┐
+│ Programa da visita           │
+│ [Pastoreio] [Encorajamento]   │
+│                              │
+│ Família: Silva            ▾  │
+│ Dia/Horário                  │
+│ [Quinta-feira, 15:00    ▾] ✎ │
+│                              │
+│ Ao tocar no lápis:            │
+│ Dia     [Quinta-feira     ▾]  │
+│ Horário [15:00            ⏱]  │
+│ [Cancelar] [Salvar dados]    │
+└──────────────────────────────┘
 ```
-- Com o modo edição ligado, o SC pode criar, mudar e excluir itens em todas as abas (horários, modalidades, observações, novos itens).
-- Grava só nos dados desta visita; a tela Modelos Visita nunca é alterada.
-- Antes de construir, vou levantar aba por aba o que já é editável hoje e fazer só o que falta.
-- Risco: médio. Se depois o modelo for aplicado de novo à visita, o aviso de "atualização pendente" que já existe continua decidindo — as mudanças feitas à mão não são apagadas sem perguntar.
+- Preservar a lista atual de horários; acrescentar um lápis disponível ao SC quando a edição estiver liberada.
+- Ao tocar no lápis, abrir dia da semana e horário separados, preenchidos com o valor atual. Oferecer os dias que pertencem à semana da visita.
+- Só gravar ao tocar em **Salvar dados**; Cancelar não muda nada. Se outro pastoreio já usar o horário escolhido, manter a confirmação de conflito existente.
+- Gravar somente o horário daquele pastoreio na visita selecionada: não alterar o modelo, os demais pastoreios nem outras congregações.
+- Manter o horário personalizado visível na lista e nas pílulas de dias. Preservar a escolha e troca de horários pelos anciãos conforme as permissões atuais.
+- Conferir o uso do novo horário nos relatórios e no envio ao Cronograma; se já tiver sido enviado, não criar automaticamente outro compromisso nem modificar notas privadas sem ação explícita.
+- Preservar os dados existentes e o funcionamento sem internet; não alterar os arquivos protegidos de sincronização. Verificar o comportamento de salvamento offline atual antes de implementar, sem prometer suporte adicional.
+- Atualizar a Ajuda e as traduções em português, inglês e espanhol. Não mexer no Conversor S-21 nem no Analisador.
+- Validar com testes de horário personalizado, conflito e isolamento por visita, além de conferir na tela, com conta de SC, a alteração e sua leitura após salvar.
+- Risco: baixo a médio. O formato atual do horário será mantido; não há mudança de banco prevista. Reaplicar modelos continuará obedecendo ao tratamento de atualizações pendentes existente.
+
+### Conferência dos caminhos relacionados
+
+**Regra:** o SC deve conseguir mudar o dia e a hora de um pastoreio desta visita, e as próximas visualizações e envios devem usar essa escolha, sem alterar o modelo ou registros já enviados.
+
+- **Tela de Pastoreio do SC — código lido:** não atende à edição livre; o seletor só oferece os horários do modelo. Será corrigido.
+- **Seleção e troca pelos anciãos — código lido:** dependem da lista de horários do modelo. A apresentação de um horário personalizado precisa ser ajustada sem ampliar as permissões de edição.
+- **Pílulas e contagem de horários — código lido:** as pílulas do SC leem os eventos, mas `pastoral-slots.ts` considera um horário fora da lista como não atribuído. Essa suposição precisa ser corrigida para horários personalizados válidos.
+- **Leitura e validador do programa — código lido:** carregam `slot_label` e aceitam texto; não impõem a lista do modelo. Confirmar a gravação autorizada na implementação.
+- **Resumo da visita e acesso por código — código lido:** preservam `slot_label`; a visualização somente leitura o mostra diretamente. Compatíveis com o formato atual.
+- **Enviar ao Cronograma e salvar em Notas — código lido:** `ProgramDispatchSheet` e `pastoral-dispatch.ts` resolvem dia da semana e hora pelo texto, dentro das datas da visita; não exigem horário do modelo. Preservar as marcações de envio para não duplicar ou alterar registros já enviados.
+- **Relatórios PDF, reaplicação de modelos, tarefas em segundo plano e funções do banco — ainda não auditados nesta etapa:** verificar referências ao horário na implementação; não declarar esses caminhos testados antes da leitura e validação necessárias.
+
+Nenhuma tela foi alterada nesta etapa: aguarda aprovação deste esboço.
 
 ## Sugestões
 - Em (02) e (03), lembrar no aparelho os textos já digitados em "Outro" para sugerir na próxima vez.
@@ -83,5 +104,5 @@ Plano:
 - (01) `src/lib/epub-bible-parser.ts` (montagem do texto, ~linha 770) + teste em `src/lib`.
 - (02) campo `modality`/`modality_other` no payload de `program_template_items` (kind study) e nos itens da visita equivalentes; rótulos em `pt/en/es.json`, `VisitProgramTabs`, `help-content.ts` (+ ajuste em `help-content.test.ts`).
 - (03) migração: `ALTER TYPE field_modality ADD VALUE 'outro'` + coluna `modality_other text` em `field_meeting_templates`, `field_meeting_template_items`, `field_meetings`; `enum-labels.ts`, `board-program.ts`, `template-io.functions.ts`.
-- (04) auditoria das rotas da semana da visita; escrita só em tabelas por `visit_id`.
+- (04) arquivos previstos: `src/routes/_app.programa-ancioes.tsx` (campos e salvamento do dia/horário), `src/lib/pastoral-slots.ts` e seu teste (normalização e conflito, se necessário), `src/lib/help/help-content.ts` e `src/i18n/locales/{pt,en,es}.json` (Ajuda e rótulos). A tela reutiliza a escrita existente do `slot_label`, restrita ao `visit_id`; revisar seu validador e as leituras do cronograma sem modificar funções adjacentes. Sem migração prevista e sem alteração da infraestrutura offline.
 - Testes por regra: modalidade padrão de itens antigos, "Outro" exige texto, edição da visita não altera modelos.
