@@ -57,9 +57,10 @@
   function cardKey(p) { return [A.fullName(p).toLowerCase(), p.birth || "", S.serviceYearEnd(p.serviceYear) || p.serviceYear].join("|"); }
 
   /** Coloca um cartão lido: se a mesma pessoa e o mesmo ano já existem, atualiza. */
+  var importWarns = [];
   function placeCard(p, area) {
     var old = state.cards.filter(function (q) { return cardKey(q) === cardKey(p); })[0];
-    if (old) { p.id = old.id; p.area = old.area; state.cards[state.cards.indexOf(old)] = p; return "upd"; }
+    if (old) { var rw = A.replaceWarning(old, p); if (rw) importWarns.push(A.fullName(p) + ": " + rw); p.id = old.id; p.area = old.area; state.cards[state.cards.indexOf(old)] = p; return "upd"; }
     p.id = uid("c"); p.area = area; state.cards.push(p); return "ok";
   }
   async function readInto(files, area, inactive) {
@@ -82,11 +83,13 @@
   async function addFiles(files, area) {
     var data = files.filter(function (f) { return isData(f.name); });
     if (data.length) { previewImport(files.map(function (f) { return { path: f.name, file: f }; }), area); return; }
+    importWarns = [];
     var r = await readInto(files, area), bad = r.bad, upd = r.upd, ok = r.ok;
     if (ok || upd) touch();
     var parts = [];
     if (bad.length) parts.push("Não lidos (sem campos preenchíveis): " + bad.join(", "));
     if (upd || ok) parts.unshift((ok ? ok + (ok === 1 ? " novo" : " novos") : "") + (ok && upd ? ", " : "") + (upd ? upd + (upd === 1 ? " atualizado" : " atualizados") : ""));
+    if (importWarns.length) parts.push("⚠ " + importWarns.join(" · "));
     say(parts.join(" · "));
     fixPeriod(); recalc(); render();
   }
@@ -377,24 +380,37 @@
     var h = A.people(state.cards).filter(function (x) { return x.main.id === id || (x.months && Object.keys(x.months).some(function (k) { return x.months[k].p.id === id; })); })[0];
     if (!h) return;
     var cards = state.cards.filter(function (p) { return Object.keys(h.months).some(function (k) { return h.months[k].p === p; }) || p === h.main; });
-    cards.sort(function (a, b) { return (A.cardYear(a) || 0) - (A.cardYear(b) || 0); });
-    var c = cards.filter(function (p) { return A.cardYear(p) === year; })[0] || cards.filter(function (p) { return A.cardYear(p) === A.yearOfMonth(state.period.to); })[0] || cards[cards.length - 1];
+    cards.sort(function (a, b) { return (A.cardYear(b) || 0) - (A.cardYear(a) || 0); });
+    var c = cards.filter(function (p) { return A.cardYear(p) === year; })[0] || cards[0];
     var p = h.main, role = p.appt === "Elder" ? "Ancião" : p.appt === "MS" ? "Servo ministerial" : "";
     var dbr = function (iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; };
     var inP = function (k) { return k && k >= state.period.from && k <= state.period.to; };
-    var rows = c.months.map(function (m, j) {
-      var sh = m.participated || (m.hours || 0) > 0 || (m.studies || 0) > 0, has = m.participated || m.auxiliary || m.studies != null || m.hours != null || m.comments;
-      var miss = inP(m.month) && !sh && A.reportedMonths(state.cards).indexOf(m.month) >= 0;
-      return '<tr class="' + (inP(m.month) ? "inp" : "out") + '"><td>' + (m.month ? A.label(m.month) : S.MONTHS[j].slice(0, 3)) + "</td><td>" + (m.participated ? "✓" : has ? "✗" : "·") + "</td><td>" + (m.studies != null ? esc(m.studies) : "·") + "</td><td>" + (m.auxiliary ? "✓" : "·") + "</td><td>" + (m.hours != null ? esc(m.hours) : "·") + "</td><td>" + (miss ? '<span class="warnc" title="Sem pregar">⚠</span>' : "") + "</td></tr>";
-    }).join("");
-    var obs = c.months.filter(function (m) { return m.comments; }).map(function (m) { return "<li>" + esc((m.month ? A.label(m.month) + ": " : "") + m.comments) + "</li>"; }).join("");
+    var rep = A.reportedMonths(state.cards);
+    var bx = function (on) { return '<span class="s21b">' + (on ? "☑" : "☐") + "</span>"; };
+    var st = A.statusOf(c);
+    var head = '<div class="s21head"><p><b>Nome:</b> ' + esc(h.name) + "</p>" +
+      "<p><b>Data de nascimento:</b> " + esc(dbr(p.birth) || p.birth || "") + " &nbsp; " + bx(p.sex === "Male") + " Masc. " + bx(p.sex === "Female") + " Fem.</p>" +
+      "<p><b>Data de batismo:</b> " + esc(dbr(h.baptism)) + "</p>" +
+      "<p>" + bx(p.appt === "Elder") + " Ancião " + bx(p.appt === "MS") + " Servo " + bx(st === "Regular Pioneer") + " P. regular " + bx(st === "Special Pioneer") + " P. especial " + bx(st === "FieldMissionary") + " Missionário</p>" +
+      '<p class="pmeta">' + esc([areaName(c.area), role, ST_PT[st]].filter(Boolean).join(" · ")) + "</p></div>";
+    var years = cards.map(function (q) { return A.cardYear(q); });
+    var blocks = [];
+    cards.forEach(function (q, idx) {
+      var y = years[idx], prev = idx > 0 ? years[idx - 1] : null;
+      if (prev && y && prev - y > 1) for (var g = prev - 1; g > y; g--) blocks.push('<div class="s21gap">Cartão ' + (g - 1) + "/" + g + " não importado</div>");
+      var tot = 0, rows = q.months.map(function (m, jx) {
+        var sh = m.participated || (m.hours || 0) > 0 || (m.studies || 0) > 0;
+        var miss = inP(m.month) && !sh && rep.indexOf(m.month) >= 0;
+        if (m.hours != null) tot += Number(m.hours) || 0;
+        return '<tr class="' + (inP(m.month) ? "inp" : "out") + '"><td>' + S.MONTHS[jx] + (miss ? ' <span class="warnc" title="Sem pregar">⚠</span>' : "") + "</td><td>" + bx(m.participated) + "</td><td>" + (m.studies != null ? esc(m.studies) : "") + "</td><td>" + bx(m.auxiliary) + "</td><td>" + (m.hours != null ? esc(m.hours) : "") + "</td><td>" + esc(m.comments || "") + "</td></tr>";
+      }).join("");
+      blocks.push('<details class="s21year"' + (q === c ? " open" : "") + "><summary>Ano de serviço " + (y || "?") + "</summary>" +
+        '<div class="s21wrap"><table class="s21"><thead><tr><th>Ano ' + (y || "?") + "</th><th>Part.</th><th>Est.</th><th>P. aux.</th><th>Horas</th><th>Observações</th></tr></thead><tbody>" + rows +
+        '<tr class="s21tot"><td colspan="4">Total</td><td>' + (tot || "") + "</td><td></td></tr></tbody></table></div>" +
+        '<div class="sheetbtns"><button class="soft" data-editcard="' + esc(q.id) + '">Editar cartão ' + (y || "") + "</button></div></details>");
+    });
     $("sheetTitle").textContent = h.name;
-    $("sheetBody").innerHTML = (lastList ? '<button class="back" data-back>‹ Voltar</button>' : "") +
-      '<p class="pmeta">' + esc([areaName(c.area), role, ST_PT[A.statusOf(c)]].filter(Boolean).join(" · ")) + (h.baptism ? "<br>Batismo " + esc(dbr(h.baptism)) : "") + "</p>" + inactBox(id) +
-      (cards.length > 1 ? '<div class="pillrow">' + cards.map(function (q) { var y = A.cardYear(q); return '<button class="pill" data-pyear="' + y + '" data-pid="' + esc(id) + '" aria-pressed="' + (q === c) + '">Ano ' + (y || "?") + "</button>"; }).join("") + "</div>" : "") +
-      '<table class="view"><thead><tr><th>Mês</th><th>Part.</th><th>Est.</th><th>P.A.</th><th>Horas</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" +
-      (obs ? '<p class="pmeta">Observações</p><ul class="warns">' + obs + "</ul>" : "") +
-      '<div class="sheetbtns"><button class="soft" data-editcard="' + esc(c.id) + '">Editar este cartão</button></div>';
+    $("sheetBody").innerHTML = (lastList ? '<button class="back" data-back>‹ Voltar</button>' : "") + head + inactBox(id) + blocks.join("");
     showSheet();
   }
   $("sheetBody").addEventListener("change", function (e) {

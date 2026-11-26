@@ -119,3 +119,20 @@ table.view tr.out td{opacity:.5}
 .pendbar.okbar span{font-weight:600}
 .sechead .secbtn{flex:0 0 auto;min-height:36px;padding:6px 14px;border-radius:999px;font-size:13px}
 .shortd>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;color:var(--warn);min-height:32px;align-items:center}.shortd>summary::-webkit-details-marker{display:none}.shortd>summary::after{content:"›";color:var(--accent);font-weight:600}.shortd[open]>summary::after{content:"⌄"}
+
+/* Cartão no formato do S-21 */
+.s21head p{margin:2px 0;font-size:13px;line-height:1.5}
+.s21b{font-size:14px}
+.s21year{margin:10px 0;border:1px solid var(--muted);border-radius:12px;overflow:hidden}
+.s21year>summary{padding:10px 12px;font-weight:600;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.s21wrap{overflow-x:auto}
+table.s21{width:100%;border-collapse:collapse;font-size:12px}
+table.s21 th,table.s21 td{border:1px solid var(--muted);padding:5px 4px;text-align:center}
+table.s21 th:first-child,table.s21 td:first-child,table.s21 td:last-child{text-align:left}
+table.s21 tr.out td{opacity:.55}
+.s21tot td{font-weight:600}
+.s21gap{margin:10px 0;padding:10px 12px;border:1px dashed var(--muted);border-radius:12px;font-size:13px;opacity:.8}
+.s21year>summary::-webkit-details-marker{display:none}
+.s21year>summary{list-style:none}
+.s21year>summary::before{content:"▸";margin-right:8px;color:var(--accent)}
+.s21year[open]>summary::before{content:"▾"}

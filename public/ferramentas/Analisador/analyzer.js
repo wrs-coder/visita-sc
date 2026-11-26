@@ -25,6 +25,12 @@
     p.notes = (p.notes || []).filter(function (n) { return n !== "Marcado como pioneiro especial" && n !== "Marcado como missionário em campo"; });
     return p;
   }
+  /** Aviso ao trocar um cartão do mesmo ano por outro com menos meses preenchidos (provável ano digitado errado). */
+  function replaceWarning(oldCard, newCard) {
+    var n = function (p) { return (p.months || []).filter(hasData).length; };
+    var a = n(oldCard), b = n(newCard);
+    return b < a ? "Cartão do mesmo ano trocado por outro com menos meses preenchidos (" + a + " → " + b + "). Confira o Ano de serviço no PDF." : "";
+  }
   function exportTiles(tiles, opts) { return tiles.filter(function (t) { return t.key !== "apptNoStudies" || !opts || opts.apptNoStudies !== false; }); }
 
   /** Meses em que algum cartão tem relatório (meses depois disso ainda não aconteceram). */
@@ -138,11 +144,15 @@
       // Dirigem estudos (regra escolhida)
       var withSt = mine.filter(function (k) { return (at(k).studies || 0) > 0; });
       var ok = false;
-      if (rule === "last") ok = live.length > 0 && withSt.indexOf(live[live.length - 1]) >= 0;
-      else if (rule === "last3") { var last3 = live.slice(-3); ok = last3.length > 0 && last3.every(function (k) { return withSt.indexOf(k) >= 0; }); }
+      // Só meses que estão no cartão da pessoa: mês sem cartão nunca conta como "não dirigiu".
+      if (rule === "last") ok = mine.length > 0 && withSt.indexOf(mine[mine.length - 1]) >= 0;
+      else if (rule === "last3") { var last3 = mine.slice(-3); ok = last3.length > 0 && last3.every(function (k) { return withSt.indexOf(k) >= 0; }); }
       else ok = withSt.length >= 3;
       if (ok) L.studies.push(Object.assign({ months: withSt, detail: "Estudos: " + withSt.map(function (k) { return label(k) + " (" + at(k).studies + ")"; }).join(", ") }, base));
-      else if (role && mine.length) L.apptNoStudies.push(Object.assign({ detail: role + " · Não atende ao critério de estudos selecionado" }, base));
+      else if (role && mine.length) {
+        var gaps = live.filter(function (k) { return !h.months[k]; });
+        L.apptNoStudies.push(Object.assign({ gaps: gaps, detail: role + " · Não atende ao critério de estudos selecionado" + (gaps.length ? " · Faltam dados: " + gaps.map(label).join(", ") : "") }, base));
+      }
 
       // Pioneiros regulares abaixo de 50 horas
       var low = mine.filter(function (k) { return statusOf(cardAt(k)) === "Regular Pioneer" && (at(k).hours || 0) < 50; });
@@ -477,7 +487,7 @@
     { key: "any3", label: "Relatou estudos em pelo menos 3 meses do período" }
   ];
 
-  var api = { MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, setToday: setToday, closedMonth: closedMonth, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap, prCandidates: prCandidates };
+  var api = { replaceWarning: replaceWarning, MES: MES, TILES: TILES, RP_TILES: RP_TILES, analyzeRp: analyzeRp, STUDY_RULES: STUDY_RULES, label: label, addMonths: addMonths, monthsBetween: monthsBetween, reportedMonths: reportedMonths, coveredMonths: coveredMonths, defaultPeriod: defaultPeriod, cardYear: cardYear, serviceYears: serviceYears, periodOf: periodOf, yearOfMonth: yearOfMonth, lastMonths: lastMonths, periodYears: periodYears, people: people, analyze: analyze, fullName: fullName, normName: normName, folderGroups: folderGroups, sortGroups: sortGroups, monthlyTotals: monthlyTotals, TOTAL_SECTIONS: TOTAL_SECTIONS, pioneerYear: pioneerYear, setToday: setToday, closedMonth: closedMonth, fromCircuitJson: fromCircuitJson, fromTswinXml: fromTswinXml, parseDateAny: parseDateAny, dateBr: dateBr, inactiveMap: inactiveMap, prCandidates: prCandidates };
   api.statusOf = statusOf; api.setStatus = setStatus; api.exportTiles = exportTiles;
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Analisador = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
