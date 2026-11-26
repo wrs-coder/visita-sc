@@ -1,12 +1,15 @@
 # Analisador — estudos corretos, cartão no formato S-21 e importação sem falhas
 
-## (01) Por que o caso do Waldir não estava resolvido
-O ajuste anterior corrigiu **inativos e irregulares** (só contam meses que estão no cartão da pessoa). Já a regra de **estudos** ("Relatou estudos nos 3 últimos meses seguidos") ainda olha os 3 últimos meses da **congregação**, e não os do cartão da pessoa. Como falta o cartão 2025/2026 do Waldir, agosto/2026 conta como "sem estudos". Você não aprovou a correção da última vez, então ela não foi feita.
+## (01) "Ano atual marca ativos como inativos" — já foi resolvido
+Esse problema foi corrigido na atualização do dia 25/11 (regra do mês do aparelho). Hoje o Analisador só avalia até o **mês anterior ao atual** (em novembro/2026, até outubro/2026). Meses futuros não contam como "sem pregar" nem para inativos, nem para irregulares, totais e PDFs. Escolher "Ano 2027" não move mais ninguém para Inativos.
+- Vou acrescentar um teste automático que simula escolher o ano atual pela metade e confirma que nenhum publicador ativo vira inativo.
+- Se você ainda vê alguém ativo em "Inativos", feche e abra o Analisador para o aparelho trocar a cópia antiga.
 
-Correção (só no Analisador):
-- Estudos: mês sem cartão nunca conta como "não dirigiu". A regra usa os últimos meses que existem no cartão da pessoa.
-- Se faltar cartão no meio do período, a pessoa aparece com o aviso "Faltam dados: Ago 2026" e não entra em listas negativas por esse mês.
-- A mesma checagem vale para pioneiros abaixo de 50 h e meta de 600 h.
+### Caso do Waldir (estudos) — ainda falta corrigir
+A regra de estudos ainda olha os últimos meses da congregação, não os do cartão da pessoa. Correção:
+- Mês sem cartão nunca conta como "não dirigiu"; a regra usa os últimos meses que existem no cartão da pessoa.
+- Faltando cartão no período, aparece "Faltam dados: Ago 2026" e a pessoa não entra em listas negativas por esse mês.
+- Mesma checagem para pioneiros abaixo de 50 h e meta de 600 h.
 
 ## (02) Cartão no formato do S-21 original
 Sim, é possível. Ao tocar no nome, abre o cartão igual à imagem:
@@ -30,6 +33,7 @@ Sim, é possível. Ao tocar no nome, abre o cartão igual à imagem:
 └─────────────────────────────────┘
 ```
 - Ano mais recente em cima; todos os anos importados da pessoa, um embaixo do outro.
+- Cada ano pode ser recolhido ou expandido tocando na faixa do ano (ex.: "▾ Ano de serviço 2027"). O ano mais recente abre aberto; os demais começam recolhidos.
 - Ano ausente aparece como faixa "Cartão 2025/2026 não importado".
 - No celular, a tabela cabe na largura (letra menor, rolagem só se precisar). Edição continua pelo botão de editar que já existe.
 
