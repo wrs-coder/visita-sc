@@ -1,6 +1,6 @@
 // Analisador — modo sem internet próprio (escopo só /ferramentas/Analisador/).
 // Independente do public/sw.js do app VisitaSC. Página: rede primeiro; arquivos: cópia + atualização.
-const CACHE = "analisador-v8";
+const CACHE = "analisador-v9";
 const PAGE = "/ferramentas/Analisador/";
 const FILES = [
   PAGE,
@@ -15,7 +15,7 @@ const FILES = [
   "/ferramentas/S21_Export/converter.js",
 ];
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES.map((f) => (f === PAGE || /\.(png|webmanifest)$/.test(f) || f.endsWith("pdf-lib.min.js") ? f : f + "?v=9")))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
@@ -37,9 +37,9 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (!FILES.includes(url.pathname)) return;
-  e.respondWith(caches.match(url.pathname).then((hit) => {
+  e.respondWith(caches.match(url.pathname + url.search).then((hit) => {
     const net = fetch(req).then((r) => {
-      if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(url.pathname, cp)); }
+      if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(url.pathname + url.search, cp)); }
       return r;
     });
     return hit ? (net.catch(() => hit), hit) : net;

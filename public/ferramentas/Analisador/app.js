@@ -188,7 +188,7 @@
       unmarkedHtml(id) + prHtml(id) + riskHtml(id) +
       (id === "in" ? '<p class="muted small">Quem está 6 meses seguidos ou mais sem pregar até o último mês do período analisado. Não conta nos grupos de campo. Volta ao grupo de origem ao recalcular, se voltar a pregar.</p>' : "") +
       '<div class="arow">' + (id === "in" ? "" : '<button class="soft" data-add>⬆ Importar S-21</button>') + '<button class="soft" data-view aria-expanded="' + open + '"' + (list.length ? "" : " disabled") + ">" + (open ? "Ocultar cartões" : "Ver cartões") + "</button></div>" +
-      '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? A.people(list).sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); }).map(personHtml).join("") : "") + "</div>" +
+      '<div class="cards"' + (open && list.length ? "" : " hidden") + ">" + (open ? (function () { var ps = A.people(list).sort(function (a, b) { return a.name.localeCompare(b.name, "pt"); }); return moveBar(id, ps) + ps.map(personRow).join(""); })() : "") + "</div>" +
       doneHtml(id) +
       (g && state.groups.length > 1 ? '<button class="rmgroup" data-delgroup>Remover grupo</button>' : "") + "</div>";
   }
@@ -254,6 +254,28 @@
   }
 
   // Uma pessoa = um item; os cartões de anos diferentes viram pílulas dentro dele.
+  var picked = {}, editCards = {};
+  function personCards(h) {
+    var c = state.cards.filter(function (p) { return p === h.main || Object.keys(h.months).some(function (k) { return h.months[k].p === p; }); });
+    return c.filter(function (p, i) { return c.indexOf(p) === i; });
+  }
+  function personRow(h) {
+    var key = h.main.id, cards = personCards(h).sort(function (a, b) { return (A.cardYear(a) || 0) - (A.cardYear(b) || 0); });
+    var p = h.main, role = p.appt === "Elder" ? "Ancião" : p.appt === "MS" ? "Servo ministerial" : "";
+    var warn = cards.reduce(function (n, q) { return n + cardWarnings(q).length; }, 0);
+    var editing = cards.some(function (q) { return editCards[q.id]; });
+    return '<div class="prow' + (picked[key] ? " on" : "") + '"><label class="pick"><input type="checkbox" data-pick="' + esc(key) + '"' + (picked[key] ? " checked" : "") + ' aria-label="Selecionar ' + esc(h.name) + '"></label>' +
+      '<button class="item tap" data-person="' + esc(key) + '"><strong>' + esc(h.name) + "</strong><small>" + esc(["Ano " + cards.map(function (q) { return A.cardYear(q) || "?"; }).join(" · "), role, ST[A.statusOf(cards[cards.length - 1] || p)]].filter(Boolean).join(" · ")) + "</small></button>" +
+      '<span class="badge ' + (warn ? "warn" : "ok") + '">' + (warn ? "⚠ " + warn : "✓") + "</span></div>" +
+      (editing ? '<div class="pedit">' + personHtml(h) + '<button class="soft" data-endedit="' + esc(key) + '">✓ Fechar edição</button></div>' : "");
+  }
+  function moveBar(id, people) {
+    var n = people.filter(function (h) { return picked[h.main.id]; }).length, all = people.length && n === people.length;
+    return '<div class="movebar"><label class="pick"><input type="checkbox" data-pickall' + (all ? " checked" : "") + '> Todos</label>' +
+      '<span class="muted small">' + (n ? n + (n === 1 ? " selecionada" : " selecionadas") : "Marque para mover") + "</span>" +
+      '<label class="moveto">Mover para<select data-moveto>' + homeAreas().filter(function (a) { return a.id !== id; }).map(function (a) { return '<option value="' + a.id + '">' + esc(a.name) + "</option>"; }).join("") + "</select></label>" +
+      '<button class="primary" data-movego' + (n ? "" : " disabled") + ">Mover</button></div>";
+  }
   function personHtml(h) {
     var key = h.main.id, list = state.cards;
     var cards = list.filter(function (p) { return p === h.main || Object.keys(h.months).some(function (k) { return h.months[k].p === p; }); });
@@ -410,7 +432,8 @@
         '<div class="sheetbtns"><button class="soft" data-editcard="' + esc(q.id) + '">Editar cartão ' + (y || "") + "</button></div></details>");
     });
     $("sheetTitle").textContent = h.name;
-    $("sheetBody").innerHTML = (lastList ? '<button class="back" data-back>‹ Voltar</button>' : "") + head + inactBox(id) + blocks.join("");
+    var nav = (lastList ? '<button class="back" data-back>‹ Voltar</button>' : "") + (cards.length > 1 ? '<span class="sp"></span><button class="back" data-yall="1">Expandir todos</button><button class="back" data-yall="0">Recolher todos</button>' : "");
+    $("sheetBody").innerHTML = (nav ? '<div class="sheetnav">' + nav + "</div>" : "") + head + inactBox(id) + blocks.join("");
     showSheet();
   }
   $("sheetBody").addEventListener("change", function (e) {
@@ -423,11 +446,12 @@
     var el = e.target;
     var per = el.closest("[data-person]"); if (per) { openPerson(per.dataset.person); return; }
     if (el.closest("[data-back]")) { openList(lastList); return; }
+    var ya = el.closest("[data-yall]"); if (ya) { $("sheetBody").querySelectorAll("details.s21year").forEach(function (d) { d.open = ya.dataset.yall === "1"; }); return; }
     var py = el.closest("[data-pyear]"); if (py) { openPerson(py.dataset.pid, Number(py.dataset.pyear)); return; }
     var ed = el.closest("[data-editcard]");
     if (ed) {
       var c = state.cards.filter(function (p) { return p.id === ed.dataset.editcard; })[0]; if (!c) return;
-      $("sheet").close(); state.active = c.area; openAreas[c.area] = true; render();
+      $("sheet").close(); editCards[c.id] = true; state.active = effArea(c) || c.area; openAreas[state.active] = true; render();
       var d = document.querySelector('.card[data-id="' + c.id + '"]'); if (d) { d.open = true; d.scrollIntoView({ block: "start", behavior: "smooth" }); }
       return;
     }
@@ -592,6 +616,16 @@
       if (el.closest("[data-finish]")) { state.done[id] = today(); touch(); render(); return; }
       if (el.closest("[data-reopen]")) { delete state.done[id]; touch(); render(); return; }
       if (el.closest("[data-view]")) { openAreas[id] = !openAreas[id]; render(); return; }
+      var ee = el.closest("[data-endedit]");
+      if (ee) { A.people(state.cards).forEach(function (h) { if (h.main.id === ee.dataset.endedit) personCards(h).forEach(function (q) { delete editCards[q.id]; }); }); render(); return; }
+      if (el.closest("[data-movego]")) {
+        var to = el.closest(".area").querySelector("[data-moveto]"); to = to && to.value; if (!to) return;
+        var moved = 0;
+        A.people(cardsOf(id)).forEach(function (h) { if (!picked[h.main.id]) return; personCards(h).forEach(function (q) { q.area = to; }); delete picked[h.main.id]; moved++; });
+        A.people(state.cards).forEach(function (h) { if (picked[h.main.id] && personCards(h).every(function (q) { return q.area === to; })) delete picked[h.main.id]; });
+        if (!moved) return;
+        openAreas[to] = true; recalc(); touch(); render(); return;
+      }
       if (el.closest("[data-delgroup]")) {
         var n = cardsOf(id).length;
         if (!confirm(n ? "Remover o grupo e os " + n + " cartões dele?" : "Remover este grupo?")) return;
@@ -611,6 +645,9 @@
       return;
     }
     // change
+    if (el.dataset.pick) { if (el.checked) picked[el.dataset.pick] = true; else delete picked[el.dataset.pick]; render(); return; }
+    if (el.hasAttribute && el.hasAttribute("data-pickall")) { A.people(cardsOf(id)).forEach(function (h) { if (el.checked) picked[h.main.id] = true; else delete picked[h.main.id]; }); render(); return; }
+    if (el.hasAttribute && el.hasAttribute("data-moveto")) return;
     if (el.dataset.g) { state.groups.forEach(function (g) { if (g.id === id) g[el.dataset.g] = el.value.trim(); }); touch(); render(); return; }
     var card = el.closest(".card"); if (!card) return;
     var p = state.cards.filter(function (x) { return x.id === card.dataset.id; })[0]; if (!p) return;

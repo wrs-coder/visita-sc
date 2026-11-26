@@ -136,3 +136,16 @@ table.s21 tr.out td{opacity:.55}
 .s21year>summary{list-style:none}
 .s21year>summary::before{content:"▸";margin-right:8px;color:var(--accent)}
 .s21year[open]>summary::before{content:"▾"}
+.sheetnav{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.sheetnav .sp{flex:1}
+.movebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border-radius:14px;background:var(--bg);margin-bottom:8px}
+.movebar .moveto{display:flex;gap:6px;align-items:center;flex:1;min-width:180px}
+.movebar select{flex:1;min-height:40px}
+.movebar button{min-height:40px}
+.pick{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 4px}
+.pick input{width:22px;height:22px}
+.prow{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line, rgba(0,0,0,.08))}
+.prow .item{flex:1;text-align:left}
+.prow.on{background:var(--bg)}
+.pedit{padding:6px 0 12px}
+.movebar button:disabled{opacity:.45}
